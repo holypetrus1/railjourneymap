@@ -6,6 +6,7 @@ import {
   isRailLeg,
   measureJourney,
   polylineToLatLngs,
+  sliceTripPolylineForLeg,
 } from '../src/route-utils.js';
 
 test('converts HAFAS GeoJSON point collections to Leaflet coordinates', () => {
@@ -47,18 +48,40 @@ test('measures a journey along its detailed polyline', () => {
   assert.ok(result.distanceMeters > 68_000 && result.distanceMeters < 69_000);
 });
 
-test('falls back to station coordinates and marks the distance as approximate', () => {
+test('slices a complete trip polyline to the selected journey leg', () => {
+  const polyline = {
+    type: 'FeatureCollection',
+    features: [
+      { geometry: { type: 'Point', coordinates: [10, 50] } },
+      { geometry: { type: 'Point', coordinates: [11, 51] } },
+      { geometry: { type: 'Point', coordinates: [12, 52] } },
+      { geometry: { type: 'Point', coordinates: [13, 53] } },
+    ],
+  };
+
+  const points = sliceTripPolylineForLeg(
+    polyline,
+    { location: { latitude: 51, longitude: 11 } },
+    { location: { latitude: 53, longitude: 13 } },
+  );
+
+  assert.deepEqual(points, [[51, 11], [52, 12], [53, 13]]);
+});
+
+test('uses stopovers for a better approximate route', () => {
   const journey = {
     legs: [{
       line: { mode: 'train', product: 'regional' },
       origin: { location: { latitude: 52, longitude: 13 } },
+      stopovers: [{ stop: { location: { latitude: 52.5, longitude: 13.5 } } }],
       destination: { location: { latitude: 53, longitude: 13 } },
     }],
   };
 
   const result = measureJourney(journey);
   assert.equal(result.approximate, true);
-  assert.ok(result.distanceMeters > 111_000 && result.distanceMeters < 112_000);
+  assert.equal(result.segments[0].points.length, 3);
+  assert.ok(result.distanceMeters > 120_000);
 });
 
 test('formats long and short route lengths for German UI', () => {
