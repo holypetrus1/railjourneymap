@@ -149,5 +149,6 @@ export async function fetchJourneys({ fromId, toId, departure }, signal) {
 
   const journeys = Array.isArray(data?.journeys) ? data.journeys : [];
   await addTripPolylines(journeys, signal);
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   return journeys;
 }
