@@ -174,6 +174,9 @@ export function journeyDurationMinutes(journey) {
 }
 
 export function journeyTransfers(journey) {
+  if (Number.isFinite(Number(journey?.transfers))) {
+    return Math.max(0, Number(journey.transfers));
+  }
   return Math.max(0, (journey?.legs ?? []).filter(isRailLeg).length - 1);
 }
 
