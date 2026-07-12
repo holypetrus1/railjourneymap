@@ -39,16 +39,73 @@ export function isRailLeg(leg) {
   ].includes(leg.line?.product);
 }
 
+function nearestPointIndex(points, target, startIndex = 0, endIndex = points.length) {
+  if (!target || !points.length) return -1;
+  let bestIndex = -1;
+  let bestDistance = Infinity;
+
+  for (let index = startIndex; index < endIndex; index += 1) {
+    const distance = haversineMeters(points[index], target);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+
+  return bestIndex;
+}
+
+export function sliceTripPolylineForLeg(polyline, originPlace, destinationPlace) {
+  const points = polylineToLatLngs(polyline);
+  const origin = coordinatesOf(originPlace);
+  const destination = coordinatesOf(destinationPlace);
+  if (points.length < 2 || !origin || !destination) return [];
+
+  const originIndex = nearestPointIndex(points, origin);
+  const forwardDestinationIndex = nearestPointIndex(points, destination, Math.max(0, originIndex));
+
+  if (originIndex >= 0 && forwardDestinationIndex > originIndex) {
+    return points.slice(originIndex, forwardDestinationIndex + 1);
+  }
+
+  const destinationIndex = nearestPointIndex(points, destination);
+  if (destinationIndex >= 0 && destinationIndex < originIndex) {
+    return points.slice(destinationIndex, originIndex + 1).reverse();
+  }
+
+  return [];
+}
+
+function stopoverPoints(leg) {
+  const candidates = [
+    coordinatesOf(leg?.origin),
+    ...(leg?.stopovers ?? []).map((stopover) => coordinatesOf(stopover?.stop ?? stopover)),
+    coordinatesOf(leg?.destination),
+  ].filter(Boolean);
+
+  return candidates.filter((point, index) => {
+    if (index === 0) return true;
+    const previous = candidates[index - 1];
+    return point[0] !== previous[0] || point[1] !== previous[1];
+  });
+}
+
 export function legGeometry(leg) {
   const detailed = polylineToLatLngs(leg?.polyline);
   if (detailed.length >= 2) {
     return { points: detailed, approximate: false };
   }
 
-  const origin = coordinatesOf(leg?.origin);
-  const destination = coordinatesOf(leg?.destination);
-  const fallback = [origin, destination].filter(Boolean);
+  const tripDetailed = sliceTripPolylineForLeg(
+    leg?.tripPolyline,
+    leg?.origin,
+    leg?.destination,
+  );
+  if (tripDetailed.length >= 2) {
+    return { points: tripDetailed, approximate: false };
+  }
 
+  const fallback = stopoverPoints(leg);
   return { points: fallback, approximate: fallback.length >= 2 };
 }
 
