@@ -15,11 +15,12 @@ Eine statische Web-App, die Bahnverbindungen zwischen zwei Bahnhöfen sucht und 
 
 ## Datenquellen
 
-- Verbindungen und Fahrt-Polylinien: [v6.db.transport.rest](https://v6.db.transport.rest/)
+- Bahnhofssuche, Verbindungen und Streckengeometrien: [Transitous](https://transitous.org/) über die versionierte [MOTIS-API](https://api.transitous.org/)
+- Übersicht der in Transitous eingebundenen Fahrplandaten: [Transitous Sources](https://transitous.org/sources/)
 - Basiskarte: [OpenStreetMap](https://www.openstreetmap.org/)
 - Bahn-Infrastruktur-Layer: [OpenRailwayMap](https://www.openrailwaymap.org/)
 
-Die transport.rest-Instanz ist ein frei nutzbarer Community-Dienst ohne Verfügbarkeitsgarantie. Die Anwendung begrenzt Anfragen durch verzögerte Bahnhofssuche und lädt Strecken nur nach einer bewussten Nutzereingabe.
+Transitous ist ein frei nutzbarer, gemeinschaftlich betriebener Routingdienst. Die Anwendung verwendet für die Bahnhofssuche `v1/geocode` und für die Verbindungssuche `v6/plan` mit detaillierten Zugabschnitten und Streckengeometrien.
 
 ## Lokal starten
 
@@ -41,3 +42,7 @@ npm run check
 ## GitHub Pages
 
 Der Workflow `.github/workflows/pages.yml` veröffentlicht den Inhalt des `main`-Branches. Im Repository muss unter **Settings → Pages → Build and deployment** als Quelle **GitHub Actions** ausgewählt sein.
+
+## Lizenz
+
+Der Quellcode steht unter der [MIT-Lizenz](./LICENSE).
