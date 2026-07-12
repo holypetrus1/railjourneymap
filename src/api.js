@@ -1,6 +1,14 @@
-const API_BASE_URL = 'https://v6.db.transport.rest';
-const REQUEST_TIMEOUT_MS = 20_000;
-const TRIP_GEOMETRY_CONCURRENCY = 3;
+const API_BASE_URL = 'https://api.transitous.org/api/';
+const REQUEST_TIMEOUT_MS = 25_000;
+const RAIL_MODES = new Set([
+  'HIGHSPEED_RAIL',
+  'LONG_DISTANCE',
+  'NIGHT_RAIL',
+  'REGIONAL_FAST_RAIL',
+  'REGIONAL_RAIL',
+  'SUBURBAN',
+]);
+const REQUESTED_RAIL_MODES = [...RAIL_MODES].join(',');
 
 export class ApiError extends Error {
   constructor(message, status = null) {
@@ -10,14 +18,18 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchJson(path, params = {}, externalSignal) {
+async function fetchJson(path, params, externalSignal) {
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timedOut = false;
+  const timeout = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
   const abortFromOutside = () => controller.abort();
   externalSignal?.addEventListener('abort', abortFromOutside, { once: true });
 
   const url = new URL(path, API_BASE_URL);
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(params ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, String(value));
     }
@@ -30,125 +42,228 @@ async function fetchJson(path, params = {}, externalSignal) {
     });
 
     if (!response.ok) {
-      throw new ApiError(`Die Datenquelle antwortet mit Status ${response.status}.`, response.status);
-    }
-
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('json')) {
-      throw new ApiError('Die Datenquelle hat keine gültigen Bahndaten geliefert.');
+      let detail = '';
+      try {
+        const body = await response.json();
+        detail = typeof body?.error === 'string' ? ` ${body.error}` : '';
+      } catch {
+        // A non-JSON error body is not useful to the UI.
+      }
+      throw new ApiError(
+        `Der Routingdienst antwortet mit Status ${response.status}.${detail}`.trim(),
+        response.status,
+      );
     }
 
     return await response.json();
   } catch (error) {
     if (error?.name === 'AbortError') {
-      if (externalSignal?.aborted) throw error;
-      throw new ApiError('Die Anfrage hat zu lange gedauert. Bitte versuche es erneut.');
+      if (externalSignal?.aborted && !timedOut) throw error;
+      throw new ApiError('Die Anfrage an den Routingdienst hat zu lange gedauert.');
     }
     if (error instanceof ApiError) throw error;
-    throw new ApiError('Die Bahndaten konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
+    throw new ApiError(
+      'Der Routingdienst Transitous konnte nicht erreicht werden. Bitte versuche es später erneut.',
+    );
   } finally {
     globalThis.clearTimeout(timeout);
     externalSignal?.removeEventListener('abort', abortFromOutside);
   }
 }
 
+function hasRailMode(modes) {
+  return Array.isArray(modes) && modes.some((mode) => RAIL_MODES.has(mode));
+}
+
+function stationFromMatch(match) {
+  return {
+    type: 'station',
+    id: match.id,
+    name: match.name,
+    location: {
+      type: 'location',
+      latitude: Number(match.lat),
+      longitude: Number(match.lon),
+    },
+    modes: match.modes ?? [],
+  };
+}
+
 export async function searchStations(query, signal) {
   const normalized = query.trim();
   if (normalized.length < 2) return [];
 
-  // Use the local DB station index instead of consuming the heavily
-  // rate-limited journey backend for every autocomplete keystroke.
-  const stations = await fetchJson('/stations', {
-    query: normalized,
-    limit: 8,
-    fuzzy: true,
-    completion: true,
+  const matches = await fetchJson('v1/geocode', {
+    text: normalized,
+    type: 'STOP',
+    mode: 'RAIL',
+    language: 'de',
+    numResults: 8,
   }, signal);
 
-  return Object.values(stations ?? {})
-    .filter((station) => station?.id && station?.name && station?.location)
+  return (Array.isArray(matches) ? matches : [])
+    .filter((match) => match?.type === 'STOP')
+    .filter((match) => match?.id && match?.name)
+    .filter((match) => Number.isFinite(Number(match?.lat)) && Number.isFinite(Number(match?.lon)))
+    .filter((match) => !Array.isArray(match.modes) || hasRailMode(match.modes))
+    .map(stationFromMatch)
     .slice(0, 8);
 }
 
-async function fetchTrip(tripId, signal) {
-  const data = await fetchJson(`/trips/${encodeURIComponent(tripId)}`, {
-    stopovers: true,
-    remarks: false,
-    polyline: true,
-    language: 'de',
-    profile: 'dbnav',
-    pretty: false,
-  }, signal);
+export function decodePolyline(encoded, precision = 6) {
+  if (typeof encoded !== 'string' || !encoded.length) return [];
 
-  return data?.trip ?? data;
-}
+  const factor = 10 ** Number(precision || 6);
+  const points = [];
+  let latitude = 0;
+  let longitude = 0;
+  let index = 0;
 
-async function addTripPolylines(journeys, signal) {
-  const targetsByTripId = new Map();
+  const readDelta = () => {
+    let result = 0;
+    let shift = 0;
+    let byte;
 
-  for (const journey of journeys) {
-    for (const leg of journey?.legs ?? []) {
-      if (!leg?.tripId || leg.walking || leg.line?.mode !== 'train') continue;
-      const targets = targetsByTripId.get(leg.tripId) ?? [];
-      targets.push(leg);
-      targetsByTripId.set(leg.tripId, targets);
-    }
-  }
+    do {
+      if (index >= encoded.length) throw new Error('Unvollständige Polyline');
+      byte = encoded.charCodeAt(index) - 63;
+      index += 1;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
 
-  const queue = [...targetsByTripId.entries()];
-  const worker = async () => {
-    while (queue.length && !signal?.aborted) {
-      const [tripId, legs] = queue.shift();
-      try {
-        const trip = await fetchTrip(tripId, signal);
-        if (!trip?.polyline) continue;
-        legs.forEach((leg) => {
-          leg.tripPolyline = trip.polyline;
-        });
-      } catch (error) {
-        // Missing trip geometry must not make the connection search fail.
-        // The UI falls back to stopover coordinates and marks the result as
-        // approximate.
-        if (signal?.aborted) return;
-      }
-    }
+    return (result & 1) ? ~(result >> 1) : (result >> 1);
   };
 
-  await Promise.all(
-    Array.from({ length: Math.min(TRIP_GEOMETRY_CONCURRENCY, queue.length) }, worker),
-  );
+  try {
+    while (index < encoded.length) {
+      latitude += readDelta();
+      longitude += readDelta();
+      points.push([latitude / factor, longitude / factor]);
+    }
+  } catch {
+    return [];
+  }
+
+  return points;
+}
+
+function featureCollectionFromGeometry(geometry) {
+  const points = decodePolyline(geometry?.points, geometry?.precision ?? 6);
+  if (points.length < 2) return null;
+
+  return {
+    type: 'FeatureCollection',
+    features: points.map(([latitude, longitude]) => ({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'Point',
+        coordinates: [longitude, latitude],
+      },
+    })),
+  };
+}
+
+function placeFromMotis(place) {
+  if (!place) return null;
+  return {
+    type: 'stop',
+    id: place.stopId ?? null,
+    name: place.name ?? 'Unbekannter Halt',
+    location: {
+      type: 'location',
+      latitude: Number(place.lat),
+      longitude: Number(place.lon),
+    },
+  };
+}
+
+function productFromMode(mode) {
+  if (mode === 'HIGHSPEED_RAIL') return 'nationalExpress';
+  if (['LONG_DISTANCE', 'NIGHT_RAIL'].includes(mode)) return 'national';
+  if (mode === 'SUBURBAN') return 'suburban';
+  if (mode === 'REGIONAL_FAST_RAIL') return 'regionalExpress';
+  return 'regional';
+}
+
+function lineName(leg) {
+  return leg?.displayName
+    || leg?.routeShortName
+    || leg?.tripShortName
+    || leg?.category?.shortName
+    || leg?.category?.name
+    || 'Zug';
+}
+
+function stopoverFromPlace(place) {
+  const stop = placeFromMotis(place);
+  return {
+    stop,
+    arrival: place?.arrival ?? null,
+    departure: place?.departure ?? null,
+    plannedArrival: place?.scheduledArrival ?? null,
+    plannedDeparture: place?.scheduledDeparture ?? null,
+  };
+}
+
+function legFromMotis(leg) {
+  const rail = RAIL_MODES.has(leg?.mode);
+  return {
+    origin: placeFromMotis(leg?.from),
+    destination: placeFromMotis(leg?.to),
+    departure: leg?.startTime ?? null,
+    plannedDeparture: leg?.scheduledStartTime ?? null,
+    arrival: leg?.endTime ?? null,
+    plannedArrival: leg?.scheduledEndTime ?? null,
+    walking: !rail,
+    tripId: leg?.tripId ?? null,
+    line: rail ? {
+      type: 'line',
+      mode: 'train',
+      product: productFromMode(leg.mode),
+      name: lineName(leg),
+      productName: leg?.category?.name ?? leg?.mode,
+    } : {
+      type: 'line',
+      mode: String(leg?.mode ?? 'walk').toLowerCase(),
+      product: String(leg?.mode ?? 'walk').toLowerCase(),
+      name: leg?.mode === 'WALK' ? 'Fußweg' : String(leg?.mode ?? 'Transfer'),
+    },
+    stopovers: (leg?.intermediateStops ?? []).map(stopoverFromPlace),
+    polyline: rail ? featureCollectionFromGeometry(leg?.legGeometry) : null,
+  };
+}
+
+export function journeyFromMotis(itinerary) {
+  return {
+    legs: (itinerary?.legs ?? []).map(legFromMotis),
+    transfers: Number.isFinite(Number(itinerary?.transfers))
+      ? Number(itinerary.transfers)
+      : null,
+    duration: Number(itinerary?.duration) || null,
+  };
 }
 
 export async function fetchJourneys({ fromId, toId, departure }, signal) {
-  const data = await fetchJson('/journeys', {
-    from: fromId,
-    to: toId,
-    departure,
-    results: 6,
-    transfers: 4,
-    stopovers: true,
-    startWithWalking: false,
-    notOnlyFastRoutes: true,
-    remarks: false,
-    subStops: false,
-    entrances: false,
+  const data = await fetchJson('v6/plan', {
+    fromPlace: fromId,
+    toPlace: toId,
+    time: departure,
+    arriveBy: false,
+    maxTransfers: 4,
+    transitModes: REQUESTED_RAIL_MODES,
+    detailedLegs: true,
+    detailedTransfers: false,
+    useRoutedTransfers: false,
+    timetableView: true,
+    searchWindow: 7200,
+    numItineraries: 6,
+    maxItineraries: 8,
     language: 'de',
-    profile: 'dbnav',
-    nationalExpress: true,
-    national: true,
-    regionalExpress: true,
-    regional: true,
-    suburban: true,
-    bus: false,
-    tram: false,
-    subway: false,
-    ferry: false,
-    taxi: false,
-    pretty: false,
   }, signal);
 
-  const journeys = Array.isArray(data?.journeys) ? data.journeys : [];
-  await addTripPolylines(journeys, signal);
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-  return journeys;
+  return (Array.isArray(data?.itineraries) ? data.itineraries : [])
+    .map(journeyFromMotis)
+    .filter((journey) => journey.legs.some((leg) => leg.line?.mode === 'train'));
 }
