@@ -1,6 +1,16 @@
 const API_BASE_URL = 'https://api.transitous.org/api/';
 const REQUEST_TIMEOUT_MS = 25_000;
-const RAIL_MODES = new Set([
+
+const REQUESTED_RAIL_MODES = [
+  'HIGHSPEED_RAIL',
+  'LONG_DISTANCE',
+  'NIGHT_RAIL',
+  'REGIONAL_RAIL',
+  'SUBURBAN',
+];
+
+const RETURNED_RAIL_MODES = new Set([
+  'RAIL',
   'HIGHSPEED_RAIL',
   'LONG_DISTANCE',
   'NIGHT_RAIL',
@@ -8,7 +18,6 @@ const RAIL_MODES = new Set([
   'REGIONAL_RAIL',
   'SUBURBAN',
 ]);
-const REQUESTED_RAIL_MODES = [...RAIL_MODES].join(',');
 
 export class ApiError extends Error {
   constructor(message, status = null) {
@@ -18,7 +27,7 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchJson(path, params, externalSignal) {
+async function fetchJson(path, params = {}, externalSignal) {
   const controller = new AbortController();
   let timedOut = false;
   const timeout = globalThis.setTimeout(() => {
@@ -29,11 +38,11 @@ async function fetchJson(path, params, externalSignal) {
   externalSignal?.addEventListener('abort', abortFromOutside, { once: true });
 
   const url = new URL(path, API_BASE_URL);
-  Object.entries(params ?? {}).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') {
-      url.searchParams.set(key, String(value));
+      url.searchParams.set(key, Array.isArray(value) ? value.join(',') : String(value));
     }
-  });
+  }
 
   try {
     const response = await fetch(url, {
@@ -45,9 +54,10 @@ async function fetchJson(path, params, externalSignal) {
       let detail = '';
       try {
         const body = await response.json();
-        detail = typeof body?.error === 'string' ? ` ${body.error}` : '';
+        const message = body?.message ?? body?.error;
+        if (typeof message === 'string' && message.trim()) detail = ` ${message.trim()}`;
       } catch {
-        // A non-JSON error body is not useful to the UI.
+        // Ignore non-JSON error bodies.
       }
       throw new ApiError(
         `Der Routingdienst antwortet mit Status ${response.status}.${detail}`.trim(),
@@ -71,10 +81,6 @@ async function fetchJson(path, params, externalSignal) {
   }
 }
 
-function hasRailMode(modes) {
-  return Array.isArray(modes) && modes.some((mode) => RAIL_MODES.has(mode));
-}
-
 function stationFromMatch(match) {
   return {
     type: 'station',
@@ -95,17 +101,16 @@ export async function searchStations(query, signal) {
 
   const matches = await fetchJson('v1/geocode', {
     text: normalized,
-    type: 'STOP',
-    mode: 'RAIL',
-    language: 'de',
+    type: ['STOP'],
+    mode: ['RAIL'],
+    language: ['de'],
     numResults: 8,
   }, signal);
 
   return (Array.isArray(matches) ? matches : [])
     .filter((match) => match?.type === 'STOP')
     .filter((match) => match?.id && match?.name)
-    .filter((match) => Number.isFinite(Number(match?.lat)) && Number.isFinite(Number(match?.lon)))
-    .filter((match) => !Array.isArray(match.modes) || hasRailMode(match.modes))
+    .filter((match) => Number.isFinite(Number(match.lat)) && Number.isFinite(Number(match.lon)))
     .map(stationFromMatch)
     .slice(0, 8);
 }
@@ -123,7 +128,6 @@ export function decodePolyline(encoded, precision = 6) {
     let result = 0;
     let shift = 0;
     let byte;
-
     do {
       if (index >= encoded.length) throw new Error('Unvollständige Polyline');
       byte = encoded.charCodeAt(index) - 63;
@@ -131,7 +135,6 @@ export function decodePolyline(encoded, precision = 6) {
       result |= (byte & 0x1f) << shift;
       shift += 5;
     } while (byte >= 0x20);
-
     return (result & 1) ? ~(result >> 1) : (result >> 1);
   };
 
@@ -144,23 +147,18 @@ export function decodePolyline(encoded, precision = 6) {
   } catch {
     return [];
   }
-
   return points;
 }
 
 function featureCollectionFromGeometry(geometry) {
   const points = decodePolyline(geometry?.points, geometry?.precision ?? 6);
   if (points.length < 2) return null;
-
   return {
     type: 'FeatureCollection',
     features: points.map(([latitude, longitude]) => ({
       type: 'Feature',
       properties: {},
-      geometry: {
-        type: 'Point',
-        coordinates: [longitude, latitude],
-      },
+      geometry: { type: 'Point', coordinates: [longitude, latitude] },
     })),
   };
 }
@@ -197,9 +195,8 @@ function lineName(leg) {
 }
 
 function stopoverFromPlace(place) {
-  const stop = placeFromMotis(place);
   return {
-    stop,
+    stop: placeFromMotis(place),
     arrival: place?.arrival ?? null,
     departure: place?.departure ?? null,
     plannedArrival: place?.scheduledArrival ?? null,
@@ -208,7 +205,7 @@ function stopoverFromPlace(place) {
 }
 
 function legFromMotis(leg) {
-  const rail = RAIL_MODES.has(leg?.mode);
+  const rail = RETURNED_RAIL_MODES.has(leg?.mode);
   return {
     origin: placeFromMotis(leg?.from),
     destination: placeFromMotis(leg?.to),
@@ -257,10 +254,11 @@ export async function fetchJourneys({ fromId, toId, departure }, signal) {
     detailedTransfers: false,
     useRoutedTransfers: false,
     timetableView: true,
-    searchWindow: 7200,
+    searchWindow: 3600,
     numItineraries: 6,
     maxItineraries: 8,
-    language: 'de',
+    timeout: 20,
+    language: ['de'],
   }, signal);
 
   return (Array.isArray(data?.itineraries) ? data.itineraries : [])
