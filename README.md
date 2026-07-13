@@ -1,43 +1,48 @@
 # Rail Journey Map
 
-Eine statische Web-App, die Bahnverbindungen zwischen zwei Bahnhöfen sucht und den tatsächlichen Streckenverlauf auf einer Karte hervorhebt.
+Eine statische Web-App zum Planen und Exportieren mehrtägiger Bahnreisen.
 
 ## Funktionen
 
-- Bahnhofssuche mit Autovervollständigung
-- mehrere Bahnverbindungen zur Auswahl
-- Gleisgeometrie je Zugabschnitt auf OpenStreetMap
-- zuschaltbares OpenRailwayMap-Overlay
-- berechnete Streckenlänge in Kilometern
-- Kennzeichnung, falls ein Abschnitt nur angenähert werden kann
-- hochauflösender PNG-Export der ausgewählten Karte inklusive Linie und Kilometerangabe
-- responsive Oberfläche für Smartphone und Desktop
-- automatische Bereitstellung über GitHub Pages
+- Bahnhofssuche und Verbindungsauswahl über Transitous/MOTIS
+- bis zu zwei Via-Bahnhöfe pro Suchanfrage
+- bis zu zehn gespeicherte Tour-Segmente
+- frei wählbare Farbe und Gruppen-/Tagesbezeichnung je Segment
+- mehrere Segmente können dieselbe Farbe und Gruppe verwenden
+- Reihenfolge ändern, Segmente entfernen und Zwischenhalte einsehen
+- persistente Tour im lokalen Browser-Speicher
+- Gesamtstrecke, Fahrzeit und Gruppenanzahl
+- OpenStreetMap mit optionalem OpenRailwayMap-Overlay
+- separater Exportbereich mit 16:9, 4:3, 1:1 und 4:5
+- hochauflösender PNG-Export mit 2.560 oder 3.840 Pixel Breite
+- mobile Navigation für **Suche**, **Tour** und **Export**
 
-## PNG-Export
+## Architektur
 
-Nach Auswahl einer Verbindung wird oben rechts die Schaltfläche **PNG speichern** aktiviert. Die App rendert die aktuell eingepasste Karte clientseitig neu und erzeugt eine PNG-Datei mit ungefähr 2.560 Pixeln Breite. Auf kleinen Displays wird dafür ein höherer Skalierungsfaktor verwendet; eine Pixelgrenze schützt mobile Browser vor übermäßigem Speicherverbrauch.
+Die Anwendung trennt drei Ebenen:
 
-Die Exportdatei enthält die sichtbare Streckenlinie, die Verbindungsübersicht mit Kilometerangabe sowie die Kartenattribution. Die Bedienelemente der Karte werden nicht in das Bild übernommen. Falls eine externe Kartenebene den Export im Browser blockiert, kann OpenRailwayMap vorübergehend deaktiviert werden.
+1. **Suche:** temporäre Verbindungsergebnisse aus Transitous.
+2. **Tour:** kompakte, vereinfachte Geometrie-Snapshots der ausgewählten Verbindungen. Dadurch bleibt eine Tour auch nach dem Neuladen erhalten und belastet den Routingdienst nicht erneut.
+3. **Export:** rendert ausschließlich die gespeicherte Tour mit eigenem Seitenverhältnis, Titel und Legende.
+
+Ein Suchergebnis kann mehrere Zugläufe und Umstiege enthalten, wird aber als ein farbiges Tour-Segment gespeichert. Die Geometrie wird beim Speichern leicht vereinfacht, damit bis zu zehn lange Strecken zuverlässig in `localStorage` passen.
 
 ## Datenquellen
 
 - Bahnhofssuche, Verbindungen und Streckengeometrien: [Transitous](https://transitous.org/) über die versionierte [MOTIS-API](https://api.transitous.org/)
-- Übersicht der in Transitous eingebundenen Fahrplandaten: [Transitous Sources](https://transitous.org/sources/)
+- Übersicht der eingebundenen Fahrplandaten: [Transitous Sources](https://transitous.org/sources/)
 - Basiskarte: [OpenStreetMap](https://www.openstreetmap.org/)
 - Bahn-Infrastruktur-Layer: [OpenRailwayMap](https://www.openrailwaymap.org/)
 
-Transitous ist ein frei nutzbarer, gemeinschaftlich betriebener Routingdienst. Die Anwendung verwendet für die Bahnhofssuche `v1/geocode` und für die Verbindungssuche `v6/plan` mit detaillierten Zugabschnitten und Streckengeometrien.
+MOTIS unterstützt beim `/api/v6/plan`-Endpunkt bis zu zwei Via-Halte. Die Tour-Ebene ergänzt diese Funktion für längere, mehrtägige Reisen.
 
 ## Lokal starten
-
-Da die App keinen Build-Schritt benötigt, reicht ein einfacher lokaler Webserver:
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Danach `http://localhost:8080` öffnen. Das direkte Öffnen der HTML-Datei per `file://` sollte vermieden werden, weil Browser ES-Module dort einschränken.
+Danach `http://localhost:8080` öffnen. Das direkte Öffnen per `file://` sollte vermieden werden, weil Browser ES-Module dort einschränken.
 
 ## Tests
 
@@ -48,7 +53,7 @@ npm run check
 
 ## GitHub Pages
 
-Der Workflow `.github/workflows/pages.yml` veröffentlicht den Inhalt des `main`-Branches. Im Repository muss unter **Settings → Pages → Build and deployment** als Quelle **GitHub Actions** ausgewählt sein.
+Der Workflow `.github/workflows/pages.yml` veröffentlicht den Inhalt des `main`-Branches. Unter **Settings → Pages → Build and deployment** muss als Quelle **GitHub Actions** ausgewählt sein.
 
 ## Lizenz
 
