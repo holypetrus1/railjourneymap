@@ -4,140 +4,89 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f4f1ea" />
-    <meta name="description" content="Zugverbindungen suchen und ihren tatsächlichen Streckenverlauf auf OpenStreetMap und OpenRailwayMap ansehen." />
+    <meta name="description" content="Mehrtägige Bahnreisen suchen, zu einer farbigen Tour zusammenstellen und als hochauflösende Karte exportieren." />
     <title>Rail Journey Map</title>
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="./styles.css?v=20260713-1" />
-    <link rel="stylesheet" href="./export.css?v=20260713-1" />
-    <script type="importmap">
-      {
-        "imports": {
-          "./src/api.js": "./src/api.js?v=20260712-4",
-          "./src/route-utils.js": "./src/route-utils.js?v=20260712-4"
-        }
-      }
-    </script>
+    <link rel="stylesheet" href="./styles.css?v=20260713-2" />
   </head>
-  <body>
+  <body data-view="search">
     <main class="app-shell">
-      <aside class="sidebar" aria-label="Verbindungssuche">
+      <aside class="control-panel" aria-label="Tourplanung">
         <header class="brand">
-          <div class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" role="img">
-              <path d="M7 7.5h18v12H7zM10 4.5h12M10 23.5l-3 4M22 23.5l3 4M10.5 13h11M11 18h2M19 18h2" />
-            </svg>
-          </div>
-          <div>
-            <p class="eyebrow">Rail Journey Map</p>
-            <h1>Welche Strecke nimmt dein Zug?</h1>
-          </div>
+          <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 7.5h18v12H7zM10 4.5h12M10 23.5l-3 4M22 23.5l3 4M10.5 13h11M11 18h2M19 18h2" /></svg></div>
+          <div><p class="eyebrow">Rail Journey Map</p><h1>Baue deine Bahntour</h1></div>
         </header>
 
-        <form id="search-form" class="search-card" novalidate>
-          <div class="station-stack">
-            <div class="station-field" data-station-field="from">
-              <label for="from-input">Von</label>
-              <div class="input-wrap">
-                <span class="station-dot start" aria-hidden="true"></span>
-                <input id="from-input" type="search" autocomplete="off" placeholder="z. B. Berlin Hbf" aria-autocomplete="list" aria-controls="from-suggestions" aria-expanded="false" required />
+        <section class="view-panel" data-panel="search" aria-labelledby="search-heading">
+          <div class="panel-heading"><div><p class="eyebrow">1 · Strecken suchen</p><h2 id="search-heading">Nächstes Teilstück</h2></div><span id="segment-capacity" class="count-badge">0 / 10</span></div>
+          <form id="search-form" class="card search-card" novalidate>
+            <div class="station-stack">
+              <div class="station-field" data-station-field="from">
+                <label for="from-input">Von</label><div class="input-wrap"><span class="station-dot start" aria-hidden="true"></span><input id="from-input" type="search" autocomplete="off" placeholder="z. B. Berlin Hbf" aria-autocomplete="list" aria-controls="from-suggestions" aria-expanded="false" required /></div><div id="from-suggestions" class="suggestions" role="listbox" hidden></div>
               </div>
-              <div id="from-suggestions" class="suggestions" role="listbox" hidden></div>
-            </div>
-
-            <button id="swap-button" class="swap-button" type="button" aria-label="Start und Ziel tauschen" title="Start und Ziel tauschen">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7 4-4 4 4M12 3v14M16 17l-4 4-4-4" /></svg>
-            </button>
-
-            <div class="station-field" data-station-field="to">
-              <label for="to-input">Nach</label>
-              <div class="input-wrap">
-                <span class="station-dot destination" aria-hidden="true"></span>
-                <input id="to-input" type="search" autocomplete="off" placeholder="z. B. Hamburg Hbf" aria-autocomplete="list" aria-controls="to-suggestions" aria-expanded="false" required />
+              <div id="via1-field" class="station-field via-field" data-station-field="via1" hidden>
+                <label for="via1-input">Via 1</label><div class="input-wrap"><span class="station-dot via" aria-hidden="true"></span><input id="via1-input" type="search" autocomplete="off" placeholder="Zwischenbahnhof" aria-autocomplete="list" aria-controls="via1-suggestions" aria-expanded="false" /></div><div id="via1-suggestions" class="suggestions" role="listbox" hidden></div>
               </div>
-              <div id="to-suggestions" class="suggestions" role="listbox" hidden></div>
+              <div id="via2-field" class="station-field via-field" data-station-field="via2" hidden>
+                <label for="via2-input">Via 2</label><div class="input-wrap"><span class="station-dot via" aria-hidden="true"></span><input id="via2-input" type="search" autocomplete="off" placeholder="Weiterer Zwischenbahnhof" aria-autocomplete="list" aria-controls="via2-suggestions" aria-expanded="false" /></div><div id="via2-suggestions" class="suggestions" role="listbox" hidden></div>
+              </div>
+              <div class="station-field" data-station-field="to">
+                <label for="to-input">Nach</label><div class="input-wrap"><span class="station-dot destination" aria-hidden="true"></span><input id="to-input" type="search" autocomplete="off" placeholder="z. B. Hamburg Hbf" aria-autocomplete="list" aria-controls="to-suggestions" aria-expanded="false" required /></div><div id="to-suggestions" class="suggestions" role="listbox" hidden></div>
+              </div>
             </div>
-          </div>
-
-          <div class="date-row">
-            <div>
-              <label for="departure-input">Abfahrt</label>
-              <input id="departure-input" type="datetime-local" required />
-            </div>
-            <span class="rail-only-badge" title="Fernverkehr, Regionalverkehr und S-Bahn">Nur Bahn</span>
-          </div>
-
-          <button id="search-button" class="primary-button" type="submit">
-            <span>Verbindungen anzeigen</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5" /></svg>
-          </button>
-          <p id="form-message" class="form-message" role="alert" aria-live="polite"></p>
-        </form>
-
-        <section id="results-section" class="results-section" aria-labelledby="results-heading" hidden>
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Mögliche Strecken</p>
-              <h2 id="results-heading">Verbindungen</h2>
-            </div>
-            <span id="result-count" class="count-badge"></span>
-          </div>
-          <div id="results-list" class="results-list"></div>
+            <div class="via-actions"><button id="add-via-button" class="link-button" type="button">+ Via-Bahnhof</button><button id="remove-via-button" class="link-button muted" type="button" hidden>Via entfernen</button></div>
+            <div class="date-row"><div><label for="departure-input">Abfahrt</label><input id="departure-input" type="datetime-local" required /></div><span class="rail-only-badge" title="Fernverkehr, Regionalverkehr und S-Bahn">Nur Bahn</span></div>
+            <button id="search-button" class="primary-button" type="submit"><span>Verbindungen anzeigen</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5" /></svg></button>
+            <p id="form-message" class="form-message" role="alert" aria-live="polite"></p>
+          </form>
+          <section id="results-section" class="results-section" aria-labelledby="results-heading" hidden><div class="section-heading"><div><p class="eyebrow">Gefundene Varianten</p><h2 id="results-heading">Verbindung wählen</h2></div><span id="result-count" class="count-badge"></span></div><div id="results-list" class="results-list"></div></section>
+          <section id="add-segment-card" class="card add-segment-card" hidden>
+            <div class="panel-heading compact"><div><p class="eyebrow">Auswahl speichern</p><h2 id="selected-route-title">Teilstück</h2></div><strong id="selected-route-distance"></strong></div>
+            <div class="segment-settings"><label><span>Gruppe / Tag</span><input id="new-segment-day" type="text" maxlength="40" value="Tag 1" /></label><label><span>Farbe</span><select id="new-segment-color"></select></label></div>
+            <button id="add-segment-button" class="primary-button accent-button" type="button"><span>Zur Tour hinzufügen</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
+            <button id="continue-from-destination" class="secondary-button" type="button" hidden>Ab dem Ziel weitersuchen</button>
+          </section>
+          <section id="search-empty" class="empty-state"><div class="mini-route" aria-hidden="true"><span></span><i></i><span></span></div><h2>Erstes Teilstück suchen</h2><p>Bis zu zwei Via-Bahnhöfe helfen bei Fahrten über Eck. Anschließend speicherst du die passende Verbindung in deiner Tour.</p><button id="example-button" class="text-button" type="button">Beispiel Berlin → Hamburg laden</button></section>
         </section>
 
-        <section id="empty-state" class="empty-state">
-          <div class="mini-route" aria-hidden="true">
-            <span></span><i></i><span></span>
-          </div>
-          <h2>Start und Ziel wählen</h2>
-          <p>Du erhältst mehrere Verbindungen, den tatsächlichen Linienverlauf und die Streckenlänge.</p>
-          <button id="example-button" class="text-button" type="button">Beispiel Berlin → Hamburg laden</button>
+        <section class="view-panel" data-panel="tour" aria-labelledby="tour-heading" hidden>
+          <div class="panel-heading"><div><p class="eyebrow">2 · Tour zusammenstellen</p><h2 id="tour-heading">Gespeicherte Segmente</h2></div><span id="tour-segment-count" class="count-badge">0</span></div>
+          <div class="card tour-header-card"><label for="tour-title-input">Titel der Tour</label><input id="tour-title-input" type="text" maxlength="80" value="Meine Bahntour" /><div class="tour-totals"><div><span>Gesamt</span><strong id="tour-total-distance">–</strong></div><div><span>Fahrzeit</span><strong id="tour-total-duration">–</strong></div><div><span>Gruppen</span><strong id="tour-day-count">0</strong></div></div></div>
+          <div id="tour-list" class="tour-list"></div>
+          <section id="tour-empty" class="empty-state compact-empty"><h2>Noch keine Tour</h2><p>Wähle im Bereich „Suche“ eine Verbindung und füge sie hinzu.</p><button class="text-button" type="button" data-go-view="search">Zur Suche</button></section>
+          <button id="clear-tour-button" class="danger-button" type="button" hidden>Tour vollständig leeren</button>
         </section>
 
-        <footer class="sidebar-footer">
-          Verbindungsdaten: <a href="https://transitous.org/" target="_blank" rel="noreferrer">Transitous</a>
-          · <a href="https://transitous.org/sources/" target="_blank" rel="noreferrer">Datenquellen</a>
-          · <a href="https://github.com/holypetrus1/railjourneymap" target="_blank" rel="noreferrer">Quellcode</a>
-        </footer>
+        <section class="view-panel" data-panel="export" aria-labelledby="export-heading" hidden>
+          <div class="panel-heading"><div><p class="eyebrow">3 · Karte gestalten</p><h2 id="export-heading">PNG-Export</h2></div></div>
+          <div class="card export-settings">
+            <label for="export-title-input">Titel im Bild</label><input id="export-title-input" type="text" maxlength="80" />
+            <div class="two-column-fields"><label><span>Seitenverhältnis</span><select id="export-ratio"><option value="16 / 9">16:9 · Breit</option><option value="4 / 3">4:3 · Klassisch</option><option value="1 / 1">1:1 · Quadrat</option><option value="4 / 5">4:5 · Hochformat</option></select></label><label><span>Auflösung</span><select id="export-width"><option value="2560">2.560 px</option><option value="3840">3.840 px · 4K</option></select></label></div>
+            <label class="check-row"><input id="export-show-legend" type="checkbox" checked /><span>Legende mit Gruppen und Kilometern</span></label><label class="check-row"><input id="export-show-stops" type="checkbox" checked /><span>Start-, Ziel- und Übergangspunkte</span></label><label class="check-row"><input id="export-show-railway" type="checkbox" checked /><span>OpenRailwayMap im Export</span></label>
+            <button id="export-png-button" class="primary-button accent-button" type="button" disabled><span>Hochauflösende PNG speichern</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg></button><p id="export-status" class="form-message" role="status" aria-live="polite"></p>
+          </div>
+          <section id="export-empty" class="empty-state compact-empty"><h2>Erst die Tour bauen</h2><p>Der Export wird aktiviert, sobald mindestens ein Segment gespeichert ist.</p><button class="text-button" type="button" data-go-view="search">Zur Suche</button></section>
+        </section>
+
+        <footer class="sidebar-footer">Routing: <a href="https://transitous.org/" target="_blank" rel="noreferrer">Transitous</a> · <a href="https://transitous.org/sources/" target="_blank" rel="noreferrer">Datenquellen</a> · Karten: <a href="https://www.openstreetmap.org/" target="_blank" rel="noreferrer">OSM</a> · <a href="https://github.com/holypetrus1/railjourneymap" target="_blank" rel="noreferrer">Quellcode</a></footer>
       </aside>
 
-      <section class="map-panel" aria-label="Streckenkarte">
-        <div id="map" class="map"></div>
-        <div class="map-toolbar" data-export-ignore>
-          <label class="layer-toggle">
-            <input id="railway-layer-toggle" type="checkbox" checked />
-            <span class="toggle-track"><span></span></span>
-            <span>OpenRailwayMap</span>
-          </label>
-          <button id="export-png-button" class="export-button" type="button" disabled aria-label="Karte als hochauflösende PNG-Datei speichern" title="Karte als hochauflösende PNG-Datei speichern">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg>
-            <span>PNG speichern</span>
-          </button>
-          <button id="fit-route-button" class="map-button" type="button" disabled aria-label="Gesamte Strecke anzeigen" title="Gesamte Strecke anzeigen">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></svg>
-          </button>
+      <section id="workspace" class="workspace" aria-label="Streckenkarte">
+        <div id="map-stage" class="map-stage">
+          <div id="map" class="map"></div>
+          <div class="map-toolbar" data-export-ignore><label class="layer-toggle"><input id="railway-layer-toggle" type="checkbox" checked /><span class="toggle-track"><span></span></span><span>OpenRailwayMap</span></label><button id="fit-route-button" class="map-button" type="button" disabled aria-label="Gesamte Strecke anzeigen" title="Gesamte Strecke anzeigen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></svg></button></div>
+          <article id="route-summary" class="route-summary glass-panel" hidden aria-live="polite"><div><p id="summary-label" class="eyebrow">Ausgewählte Verbindung</p><h2 id="summary-title"></h2></div><div class="summary-stats"><div><span>Strecke</span><strong id="summary-distance">–</strong></div><div><span>Dauer</span><strong id="summary-duration">–</strong></div><div><span id="summary-third-label">Umstiege</span><strong id="summary-third-value">–</strong></div></div><p id="summary-note" class="summary-note" hidden></p></article>
+          <article id="export-overlay" class="export-overlay glass-panel" hidden><p class="eyebrow">Rail Journey Map</p><h2 id="export-overlay-title">Meine Bahntour</h2><p id="export-overlay-meta" class="export-overlay-meta"></p><div id="export-legend" class="export-legend"></div></article>
         </div>
-        <p id="export-status" class="export-status" role="status" aria-live="polite"></p>
-
-        <article id="route-summary" class="route-summary" hidden aria-live="polite">
-          <div>
-            <p id="summary-label" class="eyebrow">Ausgewählte Verbindung</p>
-            <h2 id="summary-title"></h2>
-          </div>
-          <div class="summary-stats">
-            <div><span>Strecke</span><strong id="summary-distance">–</strong></div>
-            <div><span>Dauer</span><strong id="summary-duration">–</strong></div>
-            <div><span>Umstiege</span><strong id="summary-transfers">–</strong></div>
-          </div>
-          <p id="summary-note" class="summary-note" hidden></p>
-        </article>
       </section>
     </main>
 
+    <nav class="bottom-nav" aria-label="Bereiche"><button class="nav-item is-active" type="button" data-view="search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4" /></svg><span>Suche</span></button><button class="nav-item" type="button" data-view="tour"><span id="nav-tour-count" class="nav-badge" hidden>0</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 15l3-3 2 2 3-4" /></svg><span>Tour</span></button><button class="nav-item" type="button" data-view="export"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg><span>Export</span></button></nav>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     <noscript>Diese Anwendung benötigt JavaScript.</noscript>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
-    <script type="module" src="./src/app.js?v=20260713-1"></script>
-    <script type="module" src="./src/export-map.js?v=20260713-1"></script>
+    <script type="module" src="./src/app.js?v=20260713-2"></script>
   </body>
 </html>
