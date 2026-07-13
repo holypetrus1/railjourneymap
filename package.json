@@ -1,10 +1,10 @@
 {
   "name": "railjourneymap",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/app.js && node --check src/api.js && node --check src/route-utils.js"
+    "check": "node --check src/app.js && node --check src/api.js && node --check src/route-utils.js && node --check src/export-map.js"
   }
 }
