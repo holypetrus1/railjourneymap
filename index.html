@@ -8,7 +8,8 @@
     <title>Rail Journey Map</title>
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="./styles.css?v=20260712-4" />
+    <link rel="stylesheet" href="./styles.css?v=20260713-1" />
+    <link rel="stylesheet" href="./export.css?v=20260713-1" />
     <script type="importmap">
       {
         "imports": {
@@ -102,16 +103,21 @@
 
       <section class="map-panel" aria-label="Streckenkarte">
         <div id="map" class="map"></div>
-        <div class="map-toolbar">
+        <div class="map-toolbar" data-export-ignore>
           <label class="layer-toggle">
             <input id="railway-layer-toggle" type="checkbox" checked />
             <span class="toggle-track"><span></span></span>
             <span>OpenRailwayMap</span>
           </label>
+          <button id="export-png-button" class="export-button" type="button" disabled aria-label="Karte als hochauflösende PNG-Datei speichern" title="Karte als hochauflösende PNG-Datei speichern">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg>
+            <span>PNG speichern</span>
+          </button>
           <button id="fit-route-button" class="map-button" type="button" disabled aria-label="Gesamte Strecke anzeigen" title="Gesamte Strecke anzeigen">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></svg>
           </button>
         </div>
+        <p id="export-status" class="export-status" role="status" aria-live="polite"></p>
 
         <article id="route-summary" class="route-summary" hidden aria-live="polite">
           <div>
@@ -130,6 +136,8 @@
 
     <noscript>Diese Anwendung benötigt JavaScript.</noscript>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script type="module" src="./src/app.js?v=20260712-4"></script>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+    <script type="module" src="./src/app.js?v=20260713-1"></script>
+    <script type="module" src="./src/export-map.js?v=20260713-1"></script>
   </body>
 </html>
