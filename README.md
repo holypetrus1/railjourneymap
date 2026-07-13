@@ -10,8 +10,15 @@ Eine statische Web-App, die Bahnverbindungen zwischen zwei Bahnhöfen sucht und 
 - zuschaltbares OpenRailwayMap-Overlay
 - berechnete Streckenlänge in Kilometern
 - Kennzeichnung, falls ein Abschnitt nur angenähert werden kann
+- hochauflösender PNG-Export der ausgewählten Karte inklusive Linie und Kilometerangabe
 - responsive Oberfläche für Smartphone und Desktop
 - automatische Bereitstellung über GitHub Pages
+
+## PNG-Export
+
+Nach Auswahl einer Verbindung wird oben rechts die Schaltfläche **PNG speichern** aktiviert. Die App rendert die aktuell eingepasste Karte clientseitig neu und erzeugt eine PNG-Datei mit ungefähr 2.560 Pixeln Breite. Auf kleinen Displays wird dafür ein höherer Skalierungsfaktor verwendet; eine Pixelgrenze schützt mobile Browser vor übermäßigem Speicherverbrauch.
+
+Die Exportdatei enthält die sichtbare Streckenlinie, die Verbindungsübersicht mit Kilometerangabe sowie die Kartenattribution. Die Bedienelemente der Karte werden nicht in das Bild übernommen. Falls eine externe Kartenebene den Export im Browser blockiert, kann OpenRailwayMap vorübergehend deaktiviert werden.
 
 ## Datenquellen
 
