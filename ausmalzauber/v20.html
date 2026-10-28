@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#fff8f2">
+<title>Lottes Malzauber</title>
+<style>
+:root{color-scheme:light;--ink:#302b35;--pink:#ffe5ef;--cream:#fff8f2;--line:#f0dce4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);touch-action:pan-x pan-y;color:var(--ink);font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif}
+body{position:fixed;inset:0}
+button{font:inherit;color:inherit;border:1px solid var(--line);background:#fff;border-radius:12px;min-height:36px;padding:5px 8px;touch-action:manipulation;user-select:none}button.active{background:var(--pink);border-color:#dc8faf}
+.app{height:100%;height:100dvh;width:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 9px env(safe-area-inset-bottom);gap:5px;max-width:760px;margin:auto;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;flex-shrink:0}h1{font-size:clamp(18px,4.7vw,24px);line-height:1.1;margin:0;font-weight:850}.small{font-size:11px;color:#7e6d79}
+#categories{display:flex;gap:6px;flex-shrink:0}#categories button{flex:1;font-size:13px;font-weight:750;padding:7px 2px}
+#gallery{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:7px;overflow:hidden;padding:2px}
+.art-card{min-height:0;min-width:0;padding:4px;border-radius:13px;text-align:center;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.art-card canvas{display:block;width:100%;height:calc(100% - 18px);min-height:0;object-fit:contain}.art-card span{font-size:clamp(10px,2.7vw,12px);font-weight:750;height:18px;line-height:18px}
+#studio{display:none;flex:1;min-height:0;flex-direction:column;gap:5px}.stage{flex:1;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:#fff;padding:4px}
+#paper{display:block;width:min(100%, calc((100dvh - 205px) * .785));height:auto;max-width:100%;max-height:100%;aspect-ratio:510/650;touch-action:none;background:white;border-radius:4px;user-select:none;-webkit-user-select:none}
+.tools{display:flex;align-items:stretch;justify-content:space-between;gap:4px;flex-shrink:0}.tools button{flex:1;min-width:0;padding:5px 1px;font-size:clamp(17px,4.4vw,23px);white-space:nowrap}
+#patterns{display:none;gap:4px;flex-shrink:0}#patterns button{flex:1;min-width:0;padding:4px 1px;font-size:10px}
+#colors{display:flex;justify-content:space-between;gap:4px;flex-shrink:0;padding:2px 0}.swatch{width:clamp(24px,6.8vw,33px);height:clamp(24px,6.8vw,33px);min-width:0;min-height:0;padding:0;border-radius:50%;border:2px solid white;outline:1px solid #e5d5dd;box-shadow:none}.swatch.active{outline:3px solid #55404e}
+#sizeRow{display:flex;align-items:center;gap:6px;min-height:30px;flex-shrink:0;font-size:11px;color:#776874} #sizeRow>span:first-child{display:none} #size{max-width:none} #save{font-size:20px;min-width:42px}input[type=range]{flex:1;min-width:60px;max-width:none;accent-color:#d778a0;touch-action:manipulation;pointer-events:auto;position:relative;z-index:20;min-height:32px;height:32px}#save{font-size:10px;padding:4px 7px;white-space:nowrap}
+footer{font-size:9px;text-align:center;color:#9a8792;flex-shrink:0;padding-bottom:1px}
+@media(max-height:700px){.app{gap:3px}header{min-height:34px}#categories button{min-height:32px}.tools button{min-height:32px}#sizeRow{min-height:27px}.swatch{width:25px;height:25px}}
+@media(orientation:landscape){#gallery{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:1fr}}
+@media(min-width:600px){.app{padding-left:18px;padding-right:18px}#paper{max-width:min(100%,520px)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div><h1>Lottes Malzauber ✨</h1><div class="small" id="subtitle">✨</div></div><button class="home" id="back" style="display:none" aria-label="Zurück" title="Zurück">←</button></header>
+<nav id="categories" aria-label="Bildkategorien"><button data-category="Tiere" class="active">🐾 Tiere</button><button data-category="Prinzessinnen">👑 Prinzessinnen</button><button data-category="Weltraum">🚀 Weltraum</button></nav><section id="gallery" aria-label="Ausmalbilder"></section>
+<section id="studio">
+<div class="stage" id="stage"><canvas id="paper" width="720" height="900" aria-label="Ausmalbild"></canvas></div>
+<div class="tools" aria-label="Werkzeuge">
+<button data-tool="brush" class="active" aria-label="Stift" title="Stift">🖍️</button><button data-tool="glitter" aria-label="Glitzerstift" title="Glitzerstift">✨</button><button data-tool="fill" aria-label="Füllen" title="Füllen">🪣</button><button data-tool="tape" aria-label="Washi-Tape" title="Washi-Tape">🎀</button><button data-tool="eraser" aria-label="Radierer" title="Radierer">🧽</button><button id="undo" aria-label="Rückgängig" title="Rückgängig">↶</button><button id="clear" aria-label="Alles löschen" title="Alles löschen">🗑️</button>
+</div>
+<div id="patterns" style="display:none;gap:4px;overflow:hidden"><button data-pattern="dots">● Punkte</button><button data-pattern="stripes">╱ Streifen</button><button data-pattern="hearts">♡ Herzen</button><button data-pattern="stars">☆ Sterne</button><button data-pattern="checks">▦ Karo</button></div><div id="colors" aria-label="Farben"></div>
+<div id="sizeRow"><span>Strich</span><input id="size" type="range" min="4" max="32" value="12"><span id="sizeLabel" aria-label="Strichgröße">12</span><button id="save" aria-label="Bild speichern" title="Bild speichern">💾</button></div>
+</section>
+<footer>Mit Liebe für kleine Künstlerinnen und Künstler 💗</footer>
+</div>
+<script>
+(()=>{
+'use strict';
+const W=720,H=900,NS='malzauber-v20-';
+const $=id=>document.getElementById(id);
+const gallery=$('gallery'),studio=$('studio'),canvas=$('paper'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+const fills=document.createElement('canvas');fills.width=W;fills.height=H;const fctx=fills.getContext('2d',{willReadFrequently:true});const paint=document.createElement('canvas');paint.width=W;paint.height=H;const pctx=paint.getContext('2d',{willReadFrequently:true});
+const palette=['#ff6f91','#ff9f43','#ffd93d','#75d9a3','#59c3ff','#8b8cff','#c58bfa','#ffb6d5','#a66b42','#55515c','#ffffff'];
+const pictures=[{id:"katze",name:"Kätzchen",category:"Tiere",row:0,col:0},{id:"hase",name:"Häschen",category:"Tiere",row:0,col:1},{id:"reh",name:"Rehkitz",category:"Tiere",row:0,col:2},{id:"einhorn",name:"Einhorn",category:"Tiere",row:0,col:3},{id:"fuchs",name:"Fuchs",category:"Tiere",row:0,col:4},{id:"schildkroete",name:"Schildkröte",category:"Tiere",row:0,col:5},{id:"prinzessin",name:"Prinzessin",category:"Prinzessinnen",row:1,col:0},{id:"meerjungfrau",name:"Meerjungfrau",category:"Prinzessinnen",row:1,col:1},{id:"fee",name:"Fee",category:"Prinzessinnen",row:1,col:2},{id:"einhorn_blumen",name:"Blumen-Einhorn",category:"Prinzessinnen",row:1,col:3},{id:"prinzessin_katze",name:"Prinzessin & Katze",category:"Prinzessinnen",row:1,col:4},{id:"schloss",name:"Schloss",category:"Prinzessinnen",row:1,col:5},{id:"astronaut",name:"Astronautin",category:"Weltraum",row:2,col:0},{id:"rakete",name:"Rakete",category:"Weltraum",row:2,col:1},{id:"alien",name:"Alien",category:"Weltraum",row:2,col:2},{id:"astronaut2",name:"Weltraumkind",category:"Weltraum",row:2,col:3},{id:"planeten",name:"Planeten",category:"Weltraum",row:2,col:4},{id:"roboter",name:"Roboter",category:"Weltraum",row:2,col:5}];
+const sprite=new Image();sprite.src="motif-sprite.png";
+let current=null,tool='brush',color=palette[0],size=12,mask=null,undoStack=[],drawing=false,last=null,pattern='dots';
+function svgImage(svg){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
+function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(fills,0,0);ctx.drawImage(paint,0,0);if(current?.img)ctx.drawImage(current.img,0,0,W,H)}
+function saveState(){try{undoStack.push({fills:fctx.getImageData(0,0,W,H),paint:pctx.getImageData(0,0,W,H)});if(undoStack.length>8)undoStack.shift()}catch(e){}}
+function persist(){try{localStorage.setItem(NS+current.id,JSON.stringify({fills:fills.toDataURL('image/png'),paint:paint.toDataURL('image/png')}))}catch(e){}}
+function loadState(){try{const raw=localStorage.getItem(NS+current.id);if(raw){const data=JSON.parse(raw);[['fills',fctx,data.fills],['paint',pctx,data.paint]].forEach(([name,c,url])=>{if(url){const im=new Image();im.onload=()=>{c.clearRect(0,0,W,H);c.drawImage(im,0,0,W,H);render()};im.src=url}})}}catch(e){}}
+let activeCategory='Tiere';function drawGallery(){gallery.innerHTML='';pictures.filter(p=>p.category===activeCategory).forEach(p=>{const b=document.createElement('button');b.className='art-card';const thumb=document.createElement('canvas');thumb.width=180;thumb.height=216;thumb.setAttribute('aria-hidden','true');b.appendChild(thumb);const label=document.createElement('span');label.textContent=p.name;b.appendChild(label);const paintThumb=()=>{if(sprite.complete&&sprite.naturalWidth){thumb.getContext('2d').drawImage(sprite,p.col*90,p.row*108,90,108,0,0,180,216)}};if(sprite.complete)paintThumb();else sprite.addEventListener('load',paintThumb,{once:true});b.addEventListener('click',()=>openPicture(p));gallery.appendChild(b)})}document.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>{activeCategory=b.dataset.category;document.querySelectorAll('[data-category]').forEach(x=>x.classList.toggle('active',x===b));drawGallery()}));
+async function openPicture(p){current={...p};$('subtitle').textContent=p.name;gallery.style.display='none';studio.style.display='flex';$('back').style.display='block';undoStack=[];pctx.clearRect(0,0,W,H);fctx.clearRect(0,0,W,H);await new Promise((resolve,reject)=>{if(sprite.complete&&sprite.naturalWidth)resolve();else{sprite.onload=resolve;sprite.onerror=reject}});const cropped=document.createElement('canvas');cropped.width=W;cropped.height=H;cropped.getContext('2d').drawImage(sprite,p.col*90,p.row*108,90,108,0,0,W,H);current.img=await svgImage(cropped.toDataURL('image/png'));mask=buildMask(current.img);loadState();render()}
+function buildMask(img){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);const d=x.getImageData(0,0,W,H).data,m=new Uint8Array(W*H);for(let i=0,j=0;i<d.length;i+=4,j++){if(d[i+3]>0&&d[i]<95&&d[i+1]<95&&d[i+2]<95)m[j]=1}return m}
+function point(e){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(W-1,(e.clientX-r.left)*W/r.width)),y:Math.max(0,Math.min(H-1,(e.clientY-r.top)*H/r.height))}}
+function fillAt(x,y){
+ const sx=Math.floor(x),sy=Math.floor(y),start=sy*W+sx;if(sx<0||sx>=W||sy<0||sy>=H||mask[start])return;
+ const im=fctx.getImageData(0,0,W,H),d=im.data,seen=new Uint8Array(W*H),stack=[start],rgb=color.slice(1).match(/../g).map(v=>parseInt(v,16));
+ while(stack.length){const i=stack.pop();if(i<0||i>=W*H||seen[i]||mask[i])continue;seen[i]=1;const q=i*4;d[q]=rgb[0];d[q+1]=rgb[1];d[q+2]=rgb[2];d[q+3]=255;const xx=i%W,yy=(i/W)|0;if(xx>0)stack.push(i-1);if(xx<W-1)stack.push(i+1);if(yy>0)stack.push(i-W);if(yy<H-1)stack.push(i+W)}
+ fctx.putImageData(im,0,0)
+}
+function stamp(x,y,angle){
+ pctx.save();pctx.translate(x,y);pctx.rotate(angle);pctx.fillStyle='rgba(255,255,255,.9)';pctx.strokeStyle='rgba(255,255,255,.9)';const r=Math.max(3,size*.38);
+ if(pattern==='dots'){pctx.beginPath();pctx.arc(0,0,r,0,Math.PI*2);pctx.fill()}
+ else if(pattern==='stripes'){pctx.lineWidth=Math.max(2,size*.22);pctx.beginPath();pctx.moveTo(-r*1.5,-r*2);pctx.lineTo(r*1.5,r*2);pctx.stroke()}
+ else if(pattern==='hearts'||pattern==='stars'){pctx.font='bold '+Math.max(12,size*1.2)+'px sans-serif';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(pattern==='hearts'?'♥':'★',0,0)}
+ else{pctx.fillRect(-r,-r,r*2,r*2);pctx.clearRect(-r*.35,-r*.35,r*.7,r*.7)}
+ pctx.restore()
+}
+function line(a,b){
+ pctx.save();pctx.lineCap='round';pctx.lineJoin='round';
+ if(tool==='eraser'){pctx.globalCompositeOperation='destination-out';pctx.strokeStyle='#000';pctx.lineWidth=size*3}
+ else{pctx.strokeStyle=color;pctx.lineWidth=tool==='tape'?Math.max(30,size*3.4):size*1.8;pctx.lineCap=tool==='tape'?'butt':'round'}
+ pctx.beginPath();pctx.moveTo(a.x,a.y);pctx.lineTo(b.x,b.y);pctx.stroke();
+ if(tool==='tape'){const dist=Math.hypot(b.x-a.x,b.y-a.y),ang=Math.atan2(b.y-a.y,b.x-a.x),step=Math.max(18,size*2.2);for(let d=step/2;d<dist;d+=step)stamp(a.x+(b.x-a.x)*d/dist,a.y+(b.y-a.y)*d/dist,ang)}
+ pctx.restore()
+}
+canvas.addEventListener('pointerdown',e=>{if(!current)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);const p=point(e);if(tool==='fill'){saveState();fillAt(p.x,p.y);render();persist();return}saveState();drawing=true;last=p;if(tool==='glitter'){line(p,{x:p.x+0.1,y:p.y+0.1})}else line(p,p);render()});
+canvas.addEventListener('pointermove',e=>{if(!drawing||!last)return;e.preventDefault();const p=point(e);line(last,p);last=p;render()});
+function stop(){if(drawing){drawing=false;last=null;persist()}}
+canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
+function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$('patterns').style.display=t==='tape'?'flex':'none'}
+document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));document.querySelectorAll('[data-pattern]').forEach(b=>b.addEventListener('click',()=>{pattern=b.dataset.pattern;document.querySelectorAll('[data-pattern]').forEach(x=>x.classList.toggle('active',x===b))}));
+palette.forEach(c=>{const b=document.createElement('button');b.className='swatch'+(c===color?' active':'');b.style.background=c;b.setAttribute('aria-label',c);b.addEventListener('click',()=>{color=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('active',x===b))});$('colors').appendChild(b)});
+$('size').addEventListener('input',e=>{size=Number(e.target.value);$('sizeLabel').textContent=size});
+$('undo').addEventListener('click',()=>{const s=undoStack.pop();if(s){fctx.putImageData(s.fills,0,0);pctx.putImageData(s.paint,0,0);render();persist()}});
+$('clear').addEventListener('click',()=>{if(!current)return;saveState();pctx.clearRect(0,0,W,H);fctx.clearRect(0,0,W,H);render();persist()});
+$('back').addEventListener('click',()=>{studio.style.display='none';gallery.style.display='grid';$('back').style.display='none';$('subtitle').textContent='✨';current=null});
+$('save').addEventListener('click',()=>{render();const a=document.createElement('a');a.download='lottes-malzauber-'+current.id+'.png';a.href=canvas.toDataURL('image/png');a.click()});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});document.addEventListener('touchmove',e=>{if(!e.target.closest('#paper')&&!e.target.closest('input[type="range"]'))e.preventDefault()},{passive:false});drawGallery();
+})();
+</script>
+</body>
+</html>
