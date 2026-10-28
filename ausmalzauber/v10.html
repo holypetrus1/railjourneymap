@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#fff8f2">
+<title>Lottes Malzauber</title>
+<style>
+:root{color-scheme:light;--ink:#302b35;--pink:#ffe5ef;--cream:#fff8f2;--line:#f0dce4;--shadow:0 3px 12px #56344712}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--cream);color:var(--ink);font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif}
+button{font:inherit;color:inherit;border:1px solid var(--line);background:#fff;border-radius:14px;min-height:42px;padding:8px 12px;box-shadow:var(--shadow);touch-action:manipulation}
+button:active{transform:scale(.98)}
+button.active{background:var(--pink);border-color:#e8a7c0}
+.app{height:100%;height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);gap:8px;max-width:760px;margin:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px}
+h1{font-size:clamp(19px,5vw,25px);line-height:1.1;margin:0;font-weight:850;letter-spacing:-.5px}
+.small{font-size:12px;color:#7e6d79}
+header .home{font-size:13px;white-space:nowrap}
+#gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;overflow:auto;padding:4px 2px 12px}
+.art-card{min-height:0;padding:8px;border-radius:18px;text-align:center;background:#fff}
+.art-card svg{display:block;width:100%;height:auto;max-height:34dvh;object-fit:contain}
+.art-card span{display:block;font-weight:750;padding:6px 0 2px}
+#studio{display:none;flex:1;min-height:0;flex-direction:column;gap:8px}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:#fff;padding:5px;box-shadow:var(--shadow)}
+#paper{display:block;width:auto;height:auto;max-width:100%;max-height:100%;aspect-ratio:720/900;touch-action:none;background:white;border-radius:4px}
+.tools{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:1px 1px 4px;flex-shrink:0;scrollbar-width:none}
+.tools button{flex-shrink:0;min-width:44px;padding:7px 10px}
+#colors{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 5px;flex-shrink:0;scrollbar-width:none}
+.swatch{width:34px;height:34px;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:2px solid #ffffff;outline:1px solid #e5d5dd;box-shadow:none}
+.swatch.active{outline:3px solid #55404e}
+#sizeRow{display:flex;align-items:center;gap:10px;min-height:30px;font-size:12px;color:#776874}
+input[type=range]{flex:1;min-width:60px;accent-color:#d778a0}
+footer{font-size:10px;text-align:center;color:#9a8792;padding:0 0 2px}
+@media(min-width:600px){#gallery{grid-template-columns:repeat(3,minmax(0,1fr))}.app{padding-left:18px;padding-right:18px}#paper{max-width:min(100%,520px)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div><h1>Lottes Malzauber ✨</h1><div class="small" id="subtitle">Such dir ein Bild aus!</div></div><button class="home" id="back" style="display:none">← Bilder</button></header>
+<section id="gallery" aria-label="Ausmalbilder"></section>
+<section id="studio">
+<div class="stage" id="stage"><canvas id="paper" width="720" height="900" aria-label="Ausmalbild"></canvas></div>
+<div class="tools" aria-label="Werkzeuge">
+<button data-tool="brush" class="active">🖍️ Malen</button><button data-tool="fill">🪣 Füllen</button><button data-tool="tape">🎀 Washi</button><button data-tool="eraser">⌫ Radierer</button><button id="undo">↶</button><button id="clear">Neu</button>
+</div>
+<div id="patterns" style="display:none;gap:4px;overflow:hidden"><button data-pattern="dots">● Punkte</button><button data-pattern="stripes">╱ Streifen</button><button data-pattern="hearts">♡ Herzen</button><button data-pattern="stars">☆ Sterne</button><button data-pattern="checks">▦ Karo</button></div><div id="colors" aria-label="Farben"></div>
+<div id="sizeRow"><span>Strich</span><input id="size" type="range" min="4" max="32" value="12"><span id="sizeLabel">12</span><button id="save">Bild speichern</button></div>
+</section>
+<footer>Mit Liebe für kleine Künstlerinnen und Künstler 💗</footer>
+</div>
+<script>
+(()=>{
+'use strict';
+const W=720,H=900,NS='malzauber-v10-';
+const $=id=>document.getElementById(id);
+const gallery=$('gallery'),studio=$('studio'),canvas=$('paper'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+const paint=document.createElement('canvas');paint.width=W;paint.height=H;const pctx=paint.getContext('2d',{willReadFrequently:true});
+const palette=['#ff6f91','#ff9f43','#ffd93d','#75d9a3','#59c3ff','#8b8cff','#c58bfa','#ffb6d5','#a66b42','#55515c','#ffffff'];
+const pictures=[
+{id:'cat',name:'Kätzchen',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><rect width="720" height="900" fill="white"/><g fill="white" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M178 329 190 168 310 250 Q360 225 410 250 L530 168 542 329 Q581 375 579 448 Q575 532 522 576 L526 690 Q530 735 492 735 L465 735 Q438 735 440 701 L439 626 Q360 654 281 626 L280 701 Q282 735 252 735 L225 735 Q190 735 194 700 L198 576 Q145 532 141 448 Q138 374 178 329Z"/><path d="M205 576 Q270 620 320 606 M400 606 Q460 620 516 576"/><path d="M248 423 Q278 391 307 423 Q278 454 248 423Z"/><path d="M413 423 Q442 391 472 423 Q442 454 413 423Z"/><path d="M342 465 Q360 451 378 465 L360 483Z"/><path d="M360 482 Q349 503 330 497 M360 482 Q371 503 390 497"/><path d="M320 513 245 500 M320 531 246 539 M400 513 475 500 M400 531 474 539"/><path d="M281 626 Q360 663 439 626"/><path d="M194 700 Q214 680 280 701 M440 701 Q475 680 526 700"/></g><g fill="none" stroke="#28242a" stroke-width="8" stroke-linecap="round"><path d="M227 293 285 316 M493 293 435 316"/><path d="M326 361 Q360 340 394 361"/></g><g fill="#28242a"><circle cx="278" cy="421" r="8"/><circle cx="442" cy="421" r="8"/></g></svg>`},
+{id:'unicorn',name:'Einhorn',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><rect width="720" height="900" fill="white"/><g fill="white" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M222 380 Q190 300 239 238 L321 292 Q371 265 423 292 L490 239 Q526 307 493 380 Q539 425 524 502 Q506 584 433 611 L445 719 Q449 753 416 753 L390 753 Q365 753 366 722 L360 637 L317 637 L310 722 Q312 753 282 753 L255 753 Q224 753 231 719 L246 600 Q193 560 194 493 Q193 425 222 380Z"/><path d="M314 295 359 160 394 296"/><path d="M241 387 277 421 M490 387 454 421"/><path d="M275 464 Q300 440 324 464 M397 464 Q421 440 445 464"/><path d="M344 501 Q360 514 376 501"/><path d="M246 600 Q290 627 317 637 M403 637 Q430 625 433 611"/><path d="M255 719 310 719 M366 719 445 719"/></g><g fill="none" stroke-width="10" stroke-linecap="round"><path stroke="#ff6f91" d="M258 322 Q285 345 270 375"/><path stroke="#8b8cff" d="M278 315 Q305 339 291 365"/><path stroke="#75d9a3" d="M298 310 Q325 330 312 355"/></g><g fill="#28242a"><circle cx="300" cy="462" r="8"/><circle cx="420" cy="462" r="8"/></g><g fill="white" stroke="#28242a" stroke-width="7"><path d="M211 345 Q158 338 166 394 Q193 415 228 385Z"/><path d="M488 345 Q542 338 534 394 Q506 415 472 385Z"/></g></svg>`},
+{id:'horse',name:'Pferd',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><rect width="720" height="900" fill="white"/><g fill="white" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M194 334 Q226 282 322 302 Q376 312 416 361 L493 355 Q528 351 548 385 L535 438 Q516 462 480 445 L423 430 Q393 510 337 555 L332 724 Q332 751 304 751 L278 751 Q251 751 255 721 L264 572 Q224 551 209 511 L191 440 Q169 402 194 334Z"/><path d="M416 361 444 295 470 365"/><path d="M197 346 Q147 332 151 389 L194 404"/><path d="M264 572 311 588 M337 555 378 566"/><path d="M278 751 332 751 M255 721 305 721"/><path d="M210 511 Q174 530 164 569 Q161 589 183 586 L215 552"/></g><g fill="#28242a"><circle cx="467" cy="393" r="8"/></g><path d="M444 430 Q462 443 481 430" fill="none" stroke="#28242a" stroke-width="7" stroke-linecap="round"/><path d="M300 307 Q330 268 359 302 Q387 330 405 355 M321 306 Q338 336 365 338" fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round"/><g fill="white" stroke="#28242a" stroke-width="9" stroke-linejoin="round"><path d="M270 566 280 724 307 724 323 577Z"/><path d="M321 555 348 718 376 718 370 560Z"/></g></svg>`},
+{id:'snail',name:'Schnecke',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><rect width="720" height="900" fill="white"/><g fill="white" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M151 650 Q169 574 246 574 L455 574 Q511 576 541 629 L560 682 Q561 704 533 704 L174 704 Q145 704 151 650Z"/><path d="M227 578 Q195 518 218 439 Q241 365 319 355 Q397 347 431 420 Q464 490 418 554 L386 581"/><path d="M277 377 266 287 Q264 266 285 270 L326 357 M383 365 409 285 Q417 263 435 279 L441 401"/><path d="M268 270 284 288 M417 279 431 296"/><path d="M472 579 Q512 538 546 570 L561 629"/></g><g fill="#fff" stroke="#28242a" stroke-width="8"><circle cx="321" cy="462" r="70"/></g><path d="M321 462 Q370 429 365 475 Q360 511 322 498 Q289 486 307 455 Q327 428 343 451" fill="none" stroke="#28242a" stroke-width="8" stroke-linecap="round"/><g fill="#28242a"><circle cx="284" cy="400" r="8"/><circle cx="418" cy="411" r="8"/></g><path d="M329 505 Q350 523 372 502" fill="none" stroke="#28242a" stroke-width="7" stroke-linecap="round"/><path d="M197 643 Q300 660 506 643" fill="none" stroke="#28242a" stroke-width="7"/></svg>`},
+{id:'butterfly',name:'Schmetterling',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><rect width="720" height="900" fill="white"/><g fill="white" stroke="#28242a" stroke-width="10" stroke-linejoin="round"><path d="M355 449 Q282 298 172 305 Q107 317 145 423 Q166 478 291 500 Q165 515 171 604 Q181 690 282 634 Q331 605 355 518Z"/><path d="M365 449 Q438 298 548 305 Q613 317 575 423 Q554 478 429 500 Q555 515 549 604 Q539 690 438 634 Q389 605 365 518Z"/><path d="M332 443 Q342 409 360 420 Q378 409 388 443 L380 582 Q360 610 340 582Z"/></g><g fill="white" stroke="#28242a" stroke-width="8"><circle cx="235" cy="401" r="34"/><circle cx="484" cy="401" r="34"/><circle cx="255" cy="573" r="29"/><circle cx="465" cy="573" r="29"/></g><g fill="none" stroke="#28242a" stroke-width="8" stroke-linecap="round"><path d="M351 429 Q321 375 296 375 M369 429 Q399 375 424 375"/><path d="M351 545 Q318 570 302 557 M369 545 Q402 570 418 557"/></g><g fill="#28242a"><circle cx="348" cy="462" r="5"/><circle cx="372" cy="462" r="5"/></g></svg>`}
+];
+pictures.push(
+{id:'bunny',name:'Häschen',svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><g fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M270 360 Q220 280 250 180 Q270 140 300 230 L330 330 Q360 315 390 330 L420 230 Q450 140 470 180 Q500 280 450 360 Q510 410 500 500 Q490 570 450 600 L460 710 L410 710 L395 620 Q360 635 325 620 L310 710 L260 710 L270 600 Q220 570 220 500 Q210 410 270 360Z"/><circle cx="305" cy="440" r="5"/><circle cx="415" cy="440" r="5"/><path d="M345 480 Q360 465 375 480 L360 493Z M360 493 Q350 510 335 503 M360 493 Q370 510 385 503"/><circle cx="360" cy="565" r="24"/></g></svg>'},
+{id:'bear',name:'Bärchen',svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><g fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><circle cx="250" cy="300" r="43"/><circle cx="470" cy="300" r="43"/><path d="M235 340 Q205 390 210 475 Q213 545 260 580 L250 700 L310 700 L326 610 Q360 625 394 610 L410 700 L470 700 L460 580 Q507 545 510 475 Q515 390 485 340 Q360 275 235 340Z"/><circle cx="305" cy="425" r="6"/><circle cx="415" cy="425" r="6"/><ellipse cx="360" cy="466" rx="38" ry="29"/><path d="M349 459 Q360 450 371 459 L360 470Z M360 470 Q351 486 339 479 M360 470 Q369 486 381 479"/></g></svg>'},
+{id:'elephant',name:'Elefant',svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><g fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M205 390 Q205 310 285 294 Q360 270 435 294 Q515 310 515 390 L515 520 Q515 560 478 580 L478 700 L429 700 L408 602 L312 602 L289 700 L240 700 L240 580 Q205 560 205 520Z"/><path d="M215 390 Q160 375 165 445 Q168 500 220 493 M505 390 Q560 375 555 445 Q552 500 500 493"/><circle cx="316" cy="420" r="5"/><circle cx="404" cy="420" r="5"/><path d="M342 467 Q360 482 378 467 M360 477 Q360 520 386 522 Q410 520 407 499"/></g></svg>'},
+{id:'turtle',name:'Schildkröte',svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><g fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M205 500 Q205 390 360 390 Q515 390 515 500 Q515 573 360 573 Q205 573 205 500Z"/><path d="M515 476 Q559 454 574 485 Q589 520 553 535 L515 530 M255 558 L238 626 L286 626 L307 572 M413 572 L414 626 L462 626 L465 558 M276 430 Q360 382 444 430 M240 487 Q360 450 480 487 M290 554 Q360 580 430 554"/><circle cx="558" cy="487" r="5"/><path d="M546 512 Q557 521 568 512"/></g></svg>'},
+{id:'ladybug',name:'Marienkäfer',svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900"><g fill="none" stroke="#28242a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M255 390 Q255 320 360 320 Q465 320 465 390 L465 530 Q465 610 360 625 Q255 610 255 530Z M360 330 L360 618 M255 430 L210 405 M255 500 L205 505 M465 430 L510 405 M465 500 L515 505 M310 335 Q278 285 255 300 M410 335 Q442 285 465 300"/><circle cx="325" cy="395" r="5"/><circle cx="395" cy="395" r="5"/><path d="M338 425 Q360 440 382 425"/><circle cx="310" cy="470" r="17"/><circle cx="410" cy="470" r="17"/><circle cx="310" cy="545" r="17"/><circle cx="410" cy="545" r="17"/></g></svg>'}
+);let current=null,tool='brush',color=palette[0],size=12,mask=null,undoStack=[],drawing=false,last=null,pattern='dots';
+function svgImage(svg){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
+function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(paint,0,0);if(current?.img)ctx.drawImage(current.img,0,0,W,H)}
+function saveState(){try{undoStack.push(pctx.getImageData(0,0,W,H));if(undoStack.length>8)undoStack.shift()}catch(e){}}
+function loadState(){if(!current)return;try{const raw=localStorage.getItem(NS+current.id);if(raw){const saved=new Image();saved.onload=()=>{pctx.clearRect(0,0,W,H);pctx.drawImage(saved,0,0,W,H);render()};saved.src=raw}}catch(e){}}
+function persist(){try{localStorage.setItem(NS+current.id,paint.toDataURL('image/png'))}catch(e){}}
+function drawGallery(){gallery.innerHTML='';pictures.forEach(p=>{const b=document.createElement('button');b.className='art-card';b.innerHTML=p.svg+'<span>'+p.name+'</span>';b.addEventListener('click',()=>openPicture(p));gallery.appendChild(b)})}
+async function openPicture(p){current={...p};$('subtitle').textContent=p.name;gallery.style.display='none';studio.style.display='flex';$('back').style.display='block';undoStack=[];pctx.clearRect(0,0,W,H);let outlineSvg=p.svg.replace(/<rect[^>]*fill="white"[^>]*\/>/g,'').replace(/fill="white"/g,'fill="none"').replace(/stroke="#ff6f91"|stroke="#8b8cff"|stroke="#75d9a3"/g,'stroke="#28242a"');current.img=await svgImage(outlineSvg);mask=buildMask(current.img);loadState();render()}
+function buildMask(img){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);const d=x.getImageData(0,0,W,H).data,m=new Uint8Array(W*H);for(let i=0,j=0;i<d.length;i+=4,j++){if(d[i+3]>0&&d[i]<95&&d[i+1]<95&&d[i+2]<95)m[j]=1}return m}
+function point(e){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(W-1,(e.clientX-r.left)*W/r.width)),y:Math.max(0,Math.min(H-1,(e.clientY-r.top)*H/r.height))}}
+function fillAt(x,y){
+ const sx=Math.floor(x),sy=Math.floor(y),start=sy*W+sx;
+ if(sx<0||sx>=W||sy<0||sy>=H||mask[start])return;
+ const im=pctx.getImageData(0,0,W,H),d=im.data,seen=new Uint8Array(W*H),stack=[start],rgb=color.slice(1).match(/../g).map(v=>parseInt(v,16));
+ while(stack.length){const i=stack.pop();if(i<0||i>=W*H||seen[i]||mask[i])continue;seen[i]=1;const q=i*4;
+ if(d[q]===rgb[0]&&d[q+1]===rgb[1]&&d[q+2]===rgb[2]&&d[q+3]===255)continue;
+ d[q]=rgb[0];d[q+1]=rgb[1];d[q+2]=rgb[2];d[q+3]=255;
+ const xx=i%W,yy=(i/W)|0;if(xx>0)stack.push(i-1);if(xx<W-1)stack.push(i+1);if(yy>0)stack.push(i-W);if(yy<H-1)stack.push(i+W);
+ }pctx.putImageData(im,0,0)
+}
+function stamp(x,y,angle){
+ pctx.save();pctx.translate(x,y);pctx.rotate(angle);pctx.fillStyle='rgba(255,255,255,.9)';pctx.strokeStyle='rgba(255,255,255,.9)';const r=Math.max(3,size*.38);
+ if(pattern==='dots'){pctx.beginPath();pctx.arc(0,0,r,0,Math.PI*2);pctx.fill()}
+ else if(pattern==='stripes'){pctx.lineWidth=Math.max(2,size*.22);pctx.beginPath();pctx.moveTo(-r*1.5,-r*2);pctx.lineTo(r*1.5,r*2);pctx.stroke()}
+ else if(pattern==='hearts'||pattern==='stars'){pctx.font='bold '+Math.max(12,size*1.2)+'px sans-serif';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(pattern==='hearts'?'♥':'★',0,0)}
+ else{pctx.fillRect(-r,-r,r*2,r*2);pctx.clearRect(-r*.35,-r*.35,r*.7,r*.7)}
+ pctx.restore()
+}
+function line(a,b){
+ pctx.save();pctx.lineCap='round';pctx.lineJoin='round';
+ if(tool==='eraser'){pctx.globalCompositeOperation='destination-out';pctx.strokeStyle='#000';pctx.lineWidth=size*3}
+ else{pctx.strokeStyle=color;pctx.lineWidth=tool==='tape'?Math.max(30,size*3.4):size*1.8;pctx.lineCap=tool==='tape'?'butt':'round'}
+ pctx.beginPath();pctx.moveTo(a.x,a.y);pctx.lineTo(b.x,b.y);pctx.stroke();
+ if(tool==='tape'){const dist=Math.hypot(b.x-a.x,b.y-a.y),ang=Math.atan2(b.y-a.y,b.x-a.x),step=Math.max(18,size*2.2);for(let d=step/2;d<dist;d+=step)stamp(a.x+(b.x-a.x)*d/dist,a.y+(b.y-a.y)*d/dist,ang)}
+ pctx.restore()
+}
+canvas.addEventListener('pointerdown',e=>{if(!current)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);const p=point(e);if(tool==='fill'){saveState();fillAt(p.x,p.y);render();persist();return}saveState();drawing=true;last=p;line(p,p);render()});
+canvas.addEventListener('pointermove',e=>{if(!drawing||!last)return;e.preventDefault();const p=point(e);line(last,p);last=p;render()});
+function stop(){if(drawing){drawing=false;last=null;persist()}}
+canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
+function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$('patterns').style.display=t==='tape'?'flex':'none'}
+document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));document.querySelectorAll('[data-pattern]').forEach(b=>b.addEventListener('click',()=>{pattern=b.dataset.pattern;document.querySelectorAll('[data-pattern]').forEach(x=>x.classList.toggle('active',x===b))}));
+palette.forEach(c=>{const b=document.createElement('button');b.className='swatch'+(c===color?' active':'');b.style.background=c;b.setAttribute('aria-label',c);b.addEventListener('click',()=>{color=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('active',x===b))});$('colors').appendChild(b)});
+$('size').addEventListener('input',e=>{size=Number(e.target.value);$('sizeLabel').textContent=size});
+$('undo').addEventListener('click',()=>{const s=undoStack.pop();if(s){pctx.putImageData(s,0,0);render();persist()}});
+$('clear').addEventListener('click',()=>{if(!current)return;saveState();pctx.clearRect(0,0,W,H);render();persist()});
+$('back').addEventListener('click',()=>{studio.style.display='none';gallery.style.display='grid';$('back').style.display='none';$('subtitle').textContent='Such dir ein Bild aus!';current=null});
+$('save').addEventListener('click',()=>{render();const a=document.createElement('a');a.download='lottes-malzauber-'+current.id+'.png';a.href=canvas.toDataURL('image/png');a.click()});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});let lastTouch=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouch<300)e.preventDefault();lastTouch=now},{passive:false});document.addEventListener('touchmove',e=>{if(!e.target.closest('#paper'))e.preventDefault()},{passive:false});drawGallery();
+})();
+</script>
+</body>
+</html>
