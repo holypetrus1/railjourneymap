@@ -68,8 +68,8 @@ let current=null,tool='fill',color=palette[0],size=12,mask=null,undoStack=[],dra
 function svgImage(svg){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
 function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(paint,0,0);if(current?.img)ctx.drawImage(current.img,0,0,W,H)}
 function saveState(){try{undoStack.push(pctx.getImageData(0,0,W,H));if(undoStack.length>8)undoStack.shift()}catch(e){}}
-function loadState(){if(!current)return;try{const raw=localStorage.getItem(NS+current.id);if(raw){const im=new ImageData(new Uint8ClampedArray(JSON.parse(raw)),W,H);pctx.putImageData(im,0,0)}}catch(e){pctx.clearRect(0,0,W,H)}}
-function persist(){try{localStorage.setItem(NS+current.id,JSON.stringify(Array.from(pctx.getImageData(0,0,W,H).data)))}catch(e){}}
+function loadState(){if(!current)return;try{const raw=localStorage.getItem(NS+current.id);if(raw){const saved=new Image();saved.onload=()=>{pctx.clearRect(0,0,W,H);pctx.drawImage(saved,0,0,W,H);render()};saved.src=raw}}catch(e){}}
+function persist(){try{localStorage.setItem(NS+current.id,paint.toDataURL('image/png'))}catch(e){}}
 function drawGallery(){gallery.innerHTML='';pictures.forEach(p=>{const b=document.createElement('button');b.className='art-card';b.innerHTML=p.svg+'<span>'+p.name+'</span>';b.addEventListener('click',()=>openPicture(p));gallery.appendChild(b)})}
 async function openPicture(p){current={...p};$('subtitle').textContent=p.name;gallery.style.display='none';studio.style.display='flex';$('back').style.display='block';undoStack=[];pctx.clearRect(0,0,W,H);current.img=await svgImage(p.svg);mask=buildMask(current.img);loadState();render()}
 function buildMask(img){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);const d=x.getImageData(0,0,W,H).data,m=new Uint8Array(W*H);for(let i=0,j=0;i<d.length;i+=4,j++){if(d[i]<95&&d[i+1]<95&&d[i+2]<95)m[j]=1}return m}
