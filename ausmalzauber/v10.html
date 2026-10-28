@@ -8,8 +8,8 @@
 <style>
 :root{color-scheme:light;--ink:#302b35;--pink:#ffe5ef;--cream:#fff8f2;--line:#f0dce4;--shadow:0 3px 12px #56344712}
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--cream);color:var(--ink);font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif}
-button{font:inherit;color:inherit;border:1px solid var(--line);background:#fff;border-radius:14px;min-height:42px;padding:8px 12px;box-shadow:var(--shadow);touch-action:manipulation}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);touch-action:pan-x pan-y;color:var(--ink);font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif}
+body{position:fixed;inset:0}button{font:inherit;color:inherit;border:1px solid var(--line);background:#fff;border-radius:14px;min-height:42px;padding:8px 12px;box-shadow:var(--shadow);touch-action:manipulation}
 button:active{transform:scale(.98)}
 button.active{background:var(--pink);border-color:#e8a7c0}
 .app{height:100%;height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);gap:8px;max-width:760px;margin:auto}
@@ -24,15 +24,15 @@ header .home{font-size:13px;white-space:nowrap}
 #studio{display:none;flex:1;min-height:0;flex-direction:column;gap:8px}
 .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:#fff;padding:5px;box-shadow:var(--shadow)}
 #paper{display:block;width:auto;height:auto;max-width:100%;max-height:100%;aspect-ratio:720/900;touch-action:none;background:white;border-radius:4px}
-.tools{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:1px 1px 4px;flex-shrink:0;scrollbar-width:none}
-.tools button{flex-shrink:0;min-width:44px;padding:7px 10px}
+.tools{display:flex;align-items:center;gap:4px;overflow:hidden;padding:1px 0 3px;flex-shrink:0}
+.tools button{flex:1;min-width:0;padding:5px 1px;font-size:clamp(10px,2.7vw,13px);white-space:nowrap}
 #colors{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 5px;flex-shrink:0;scrollbar-width:none}
-.swatch{width:34px;height:34px;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:2px solid #ffffff;outline:1px solid #e5d5dd;box-shadow:none}
+.swatch{width:clamp(24px,6.8vw,33px);height:clamp(24px,6.8vw,33px);min-width:0;min-height:0;padding:0;border-radius:50%;border:2px solid #ffffff;outline:1px solid #e5d5dd;box-shadow:none}
 .swatch.active{outline:3px solid #55404e}
 #sizeRow{display:flex;align-items:center;gap:10px;min-height:30px;font-size:12px;color:#776874}
 input[type=range]{flex:1;min-width:60px;accent-color:#d778a0}
 footer{font-size:10px;text-align:center;color:#9a8792;padding:0 0 2px}
-@media(orientation:landscape){#gallery{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}\n@media(min-width:600px){#gallery{grid-template-columns:repeat(3,minmax(0,1fr))}.app{padding-left:18px;padding-right:18px}#paper{max-width:min(100%,520px)}}
+@media(orientation:landscape){#gallery{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}\n@media(max-height:700px){.app{gap:4px}header{min-height:36px}.tools button{min-height:32px}#sizeRow{min-height:27px}.swatch{width:25px;height:25px}}\n@media(orientation:landscape){#gallery{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}}\n@media(min-width:600px){#gallery{grid-template-columns:repeat(3,minmax(0,1fr))}.app{padding-left:18px;padding-right:18px}#paper{max-width:min(100%,520px)}}
 </style>
 </head>
 <body>
