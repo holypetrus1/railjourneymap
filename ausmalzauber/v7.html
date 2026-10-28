@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#fff8ef">
+<title>Lottes Malzauber · Version 7</title>
+<style>
+:root{--ink:#3c3b4c;--pink:#ffb7c8;--cream:#fff8ef;--lilac:#d9c9ff;--mint:#c9f0df;--yellow:#ffe59a;--shadow:0 8px 24px #57445b12}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--cream);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,sans-serif;overscroll-behavior:none}
+button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;border:0;color:inherit}
+.app{min-height:100dvh;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);max-width:1100px;margin:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px}.brand{font-size:clamp(20px,4vw,28px);font-weight:900;letter-spacing:-.7px}.brand span{color:#e87597}.pill{border-radius:999px;background:white;padding:10px 14px;font-weight:750;box-shadow:var(--shadow)}
+.screen{display:none}.screen.active{display:block}.welcome{text-align:center;padding:clamp(18px,5vh,48px) 8px 20px}.sparkle{font-size:36px}.welcome h1{font-size:clamp(32px,8vw,56px);line-height:1.05;margin:10px 0}.welcome p{font-size:17px;line-height:1.5;margin:12px auto 24px;max-width:460px;color:#737083}.primary{background:#ef86a5;color:#fff;border-radius:18px;padding:15px 22px;font-weight:850;font-size:17px;box-shadow:0 5px 0 #d86c8c}
+.section-title{display:flex;justify-content:space-between;align-items:end;margin:18px 2px 12px}.section-title h2{margin:0;font-size:22px}.muted{display:none}
+.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-bottom:28px}.animal-card{background:white;border-radius:22px;padding:10px;box-shadow:var(--shadow);text-align:left;display:flex;flex-direction:column;gap:8px}.animal-card:active{transform:scale(.985)}.thumb{aspect-ratio:4/4.5;background:#fffdf9;border:1px solid #f4e9e6;border-radius:16px;display:grid;place-items:center;overflow:hidden}.thumb svg{width:100%;height:100%}.card-title{font-size:17px;font-weight:850}.card-meta{display:none}.resume{display:none;background:#e7f8ef;border-radius:16px;padding:12px 14px;margin:0 0 16px;text-align:left}
+#paintScreen{height:calc(100dvh - 74px);min-height:470px}.paint-header{display:flex;align-items:center;gap:8px;padding:4px 0 10px}.paint-title{font-weight:850;font-size:18px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.iconbtn{width:42px;height:42px;border-radius:15px;background:white;box-shadow:var(--shadow);font-size:20px;display:grid;place-items:center;flex-shrink:0}.save-label{display:none}
+.paint-layout{display:flex;flex-direction:column;height:calc(100% - 54px);gap:10px}.paper-wrap{flex:1;min-height:0;display:grid;place-items:center;background:#f3e9e4;border-radius:20px;padding:7px;overflow:hidden}.paper{position:relative;height:100%;width:100%;display:grid;place-items:center}.paper canvas{display:block;max-width:none;max-height:none;width:auto;height:auto;object-fit:contain;background:white;border-radius:7px;box-shadow:0 3px 12px #44334518;touch-action:none}
+.tools{background:white;border-radius:20px;padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px}.toolrow{display:flex;align-items:center;gap:7px;overflow-x:auto;scrollbar-width:none;padding:1px}.toolrow::-webkit-scrollbar{display:none}.tool{min-width:46px;height:46px;border-radius:14px;background:#f7f4f8;display:grid;place-items:center;font-size:23px;position:relative;flex-shrink:0}.tool.active{background:#ffdfeb;outline:2px solid #e87597}.glitter-preview{font-size:24px;background:conic-gradient(#ff71b8,#ffe36e,#a88bff,#7ce7d1,#ff71b8);background-clip:text;-webkit-background-clip:text;color:transparent;text-shadow:0 0 8px #f3a8ff}.tape-preview{width:30px;height:24px;border-radius:3px;background:repeating-linear-gradient(45deg,#f47da6 0 5px,#fff1a8 5px 10px,#a8e5d0 10px 15px);border:1px solid #c7779b;box-shadow:1px 2px 0 #e6d5df}.tool span{display:none}.tool span.glitter-preview,.tool span.tape-preview{display:block}.colors{display:flex;gap:7px;align-items:center;overflow-x:auto;scrollbar-width:none;flex:1;padding:3px}.swatch{width:31px;height:31px;border-radius:50%;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px #d9d4dc}.swatch.active{box-shadow:0 0 0 3px #6e6682}.custom-color{width:35px;height:35px;border:0;background:transparent;padding:0;flex-shrink:0}.size-row{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:750}.size-row input{flex:1;min-width:50px;accent-color:#e87597}.toolhint{display:none}
+@media(min-width:700px){.app{padding-left:24px;padding-right:24px}.gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.animal-card{padding:14px}.paint-layout{flex-direction:row-reverse}.paper-wrap{flex:1}.tools{width:240px;flex-shrink:0;justify-content:center}.toolrow{flex-wrap:wrap;overflow:visible}.colors{flex-wrap:wrap;overflow:visible;justify-content:flex-start}.swatch{width:32px;height:32px}.tool{min-width:48px;height:48px}.size-row{margin-top:6px}.toolhint{margin-top:6px}}
+@media(max-width:699px){.topbar{padding-top:8px}.brand{font-size:21px}.paint-layout{gap:8px}.tools{padding:8px;gap:7px}.tool{height:39px;min-width:40px}.swatch{width:28px;height:28px}.size-row{gap:8px}.gallery{gap:10px}}
+@media(orientation:landscape) and (min-width:600px){#paintScreen{height:calc(100dvh - 76px)}.paint-layout{flex-direction:row-reverse}.tools{width:225px;justify-content:center}.paper-wrap{min-width:0}.gallery{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(prefers-reduced-motion:no-preference){.animal-card,.primary,.tool{transition:transform .12s ease,background .12s ease}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar"><div class="brand">✨ Lottes <span>Malzauber</span></div><button class="pill" id="homeBtn" style="display:none">⌂ Galerie</button></header>
+<main id="homeScreen" class="screen active">
+<section class="welcome" style="padding:10px 8px 4px"><div class="sparkle">🖍️ ✨ 🐾</div><h1 style="font-size:clamp(25px,6vw,38px);margin:6px 0">Welches Bild möchtest du malen?</h1></section>
+<div id="resume" class="resume"></div>
+<div class="section-title"><h2>🐾 Such dir ein Tier aus</h2></div>
+<div class="gallery" id="gallery"></div>
+</main>
+<section id="paintScreen" class="screen">
+<div class="paint-header"><button class="iconbtn" id="backBtn" aria-label="Zurück">←</button><div class="paint-title" id="paintTitle">Mein Bild</div><span class="save-label" id="saveStatus" aria-label="Speicherstatus">●</span><button class="iconbtn" id="undoBtn" aria-label="Rückgängig">↶</button><button class="iconbtn" id="clearBtn" aria-label="Neu anfangen">↺</button></div>
+<div class="paint-layout">
+<div class="paper-wrap"><div class="paper" id="paperBox"><canvas id="canvas" width="720" height="912" aria-label="Ausmalbild"></canvas></div></div>
+<div class="tools">
+<div class="toolrow" id="toolrow">
+<button class="tool active" data-tool="brush" aria-label="Pinsel" title="Pinsel">🖌️</button>
+<button class="tool" data-tool="fill" aria-label="Füllen" title="Füllen">🪣</button>
+<button class="tool" data-tool="eraser" aria-label="Radierer" title="Radierer">🧽</button>
+<button class="tool" data-tool="glitter" aria-label="Glitzerstift" title="Glitzerstift"><span class="glitter-preview">✦✧</span></button>
+<button class="tool" data-tool="pattern" aria-label="Musterstift" title="Washi-Tape"><span class="tape-preview"></span></button>
+</div>
+<div class="toolrow"><div class="colors" id="colors"></div><input class="custom-color" id="customColor" type="color" value="#f47da6" aria-label="Eigene Farbe wählen"></div>
+<div class="size-row"><span aria-hidden="true">↔</span><input id="brushSize" type="range" min="4" max="42" value="15" aria-label="Pinselgröße"><span id="sizeValue">15</span></div><div class="toolhint" id="hint"></div>
+</div></div>
+</section>
+</div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const art={
+horse:{name:'Pferd',emoji:'🐴',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760"><rect width="600" height="760" fill="white"/><g fill="white" stroke="#292834" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M115 465 Q115 390 205 375 Q275 355 350 390 L390 405 L375 470 Q310 510 220 505 L150 500 Q115 495 115 465Z"/><path d="M340 405 L365 315 Q375 280 410 270 L445 285 L465 320 L445 350 L410 350 L390 420"/><path d="M400 278 L395 245 L420 268 M430 282 L450 250 L455 300"/><path d="M120 415 Q75 390 90 355 Q105 330 125 360"/><path d="M145 485 L140 575 Q140 600 160 600 L175 600 Q190 595 185 575 L195 495"/><path d="M185 495 L180 590 Q180 610 200 610 L220 610 Q235 605 230 585 L240 500"/><path d="M270 500 L270 590 Q270 610 290 610 L310 610 Q325 605 320 585 L325 495"/><path d="M340 475 L355 575 Q358 600 378 595 L398 590 Q410 585 400 565 L380 455"/><path d="M355 320 Q330 350 350 380 M365 315 Q390 330 410 320" fill="none"/><path d="M365 300 l-12 -30 20 13 8 -26 12 32" fill="none"/><circle cx="430" cy="315" r="6" fill="#292834"/><path d="M450 338 Q460 342 468 335" fill="none"/><path d="M80 650 Q180 630 280 650 T520 650" fill="none" stroke-width="5"/></g></svg>`},
+cat:{name:'Katze',emoji:'🐱',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760"><rect width="600" height="760" fill="white"/><g stroke="#292834" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="white"><path d="M170 280 L145 145 L260 220 Q300 200 340 220 L455 145 L430 285 Q470 330 465 405 Q460 490 390 520 L390 600 Q390 625 365 625 L330 625 Q310 620 315 600 L315 535 L275 535 L275 600 Q275 625 250 625 L215 625 Q195 620 200 600 L200 510 Q140 480 135 410 Q130 335 170 280 Z"/><path d="M180 280 L180 205 L235 242 M420 280 L420 205 L365 242" fill="none"/><path d="M150 410 Q80 390 90 335 Q100 300 130 320" fill="none"/><path d="M405 490 Q485 490 485 440 Q485 410 460 415" fill="none"/><path d="M220 450 L170 440 M220 470 L170 480 M380 450 L430 440 M380 470 L430 480" fill="none"/><path d="M300 520 Q300 560 270 565 M300 520 Q300 560 330 565" fill="none"/><path d="M100 680 Q180 660 260 680 T420 680 T520 680" fill="none" stroke="#292834" stroke-width="5"/></g><g stroke="#292834" stroke-width="5" fill="white"><ellipse cx="235" cy="350" rx="27" ry="35"/><ellipse cx="365" cy="350" rx="27" ry="35"/><circle cx="240" cy="354" r="8" fill="#292834"/><circle cx="360" cy="354" r="8" fill="#292834"/><path d="M282 395 Q300 380 318 395 L300 410 Z" fill="white"/><path d="M300 410 Q280 435 260 415 M300 410 Q320 435 340 415" fill="none" stroke-linecap="round"/></g><g fill="white"><circle cx="200" cy="400" r="17"/><circle cx="400" cy="400" r="17"/></g><g fill="white" stroke="#292834" stroke-width="4"><path d="M260 235 l40 20 -40 20z"/><path d="M300 255 l40 -20 0 40z"/></g><path d="M170 290 Q200 265 220 290 M380 290 Q400 265 430 290" fill="none" stroke="#292834" stroke-width="6" stroke-linecap="round"/></svg>`},
+snail:{name:'Schnecke',emoji:'🐌',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760"><rect width="600" height="760" fill="white"/><g fill="white" stroke="#292834" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M95 545 Q100 500 155 500 L205 500 Q235 450 275 450 L390 470 Q440 480 465 525 L490 550 Q500 580 465 590 L125 590 Q90 585 95 545Z"/><circle cx="300" cy="425" r="115"/><path d="M300 350 Q375 350 375 425 Q375 490 320 490 Q270 490 270 450 Q270 415 305 415 Q330 415 330 440" fill="none"/><path d="M185 495 L200 365 Q205 340 225 350 L235 485 M220 365 L215 315 M255 365 L270 315" fill="none"/><path d="M215 315 Q215 295 235 295 M270 315 Q270 295 290 295" fill="none"/><circle cx="235" cy="295" r="14"/><circle cx="290" cy="295" r="14"/><circle cx="239" cy="296" r="4" fill="#292834"/><circle cx="294" cy="296" r="4" fill="#292834"/><path d="M250 325 Q263 337 277 325" fill="none"/><path d="M75 650 Q180 630 285 650 T525 650" fill="none" stroke-width="5"/></g></svg>`},
+pony:{name:'Einhorn-Pony',emoji:'🦄',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760"><rect width="600" height="760" fill="white"/><g fill="white" stroke="#292834" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M125 440 Q130 380 215 375 Q285 365 345 395 L370 430 L345 475 Q275 510 195 495 L150 485 Q120 475 125 440Z"/><path d="M330 410 L350 320 Q360 285 395 275 L430 290 L450 320 L430 350 L395 350 L380 420"/><path d="M385 280 L390 230 L408 270 L430 225 L438 292"/><path d="M125 415 Q85 385 90 355 Q95 335 115 355" fill="none"/><path d="M145 475 L140 575 Q140 600 160 600 L175 600 Q190 595 185 575 L195 495"/><path d="M180 490 L175 590 Q175 610 195 610 L215 610 Q230 605 225 585 L235 500"/><path d="M260 500 L260 590 Q260 610 280 610 L300 610 Q315 605 310 585 L315 495"/><path d="M335 465 L350 575 Q353 600 373 595 L393 590 Q405 585 395 565 L375 450"/><path d="M350 320 Q330 350 350 380 L380 365" fill="none"/><path d="M350 310 Q320 290 345 270 Q360 290 370 305 M365 300 Q390 265 405 295" fill="none"/><circle cx="415" cy="315" r="6" fill="#292834"/><path d="M435 338 Q445 342 453 335" fill="none"/><path d="M80 650 Q180 630 280 650 T520 650" fill="none" stroke-width="5"/></g></svg>`},
+kitten:{name:'Kätzchen',emoji:'🐈',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760"><rect width="600" height="760" fill="white"/><g fill="white" stroke="#292834" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M190 305 L165 190 L260 240 Q300 220 340 240 L435 190 L410 305 Q455 355 445 430 Q435 495 370 520 L370 600 Q370 620 350 620 L325 620 Q305 615 310 595 L310 535 L275 535 L275 595 Q275 620 255 620 L230 620 Q210 615 215 595 L215 515 Q155 485 150 420 Q145 350 190 305Z"/><path d="M190 305 L190 235 L235 265 M410 305 L410 235 L365 265" fill="none"/><path d="M160 420 Q95 405 105 355 Q110 330 135 345 M405 485 Q475 500 480 455 Q480 430 455 430" fill="none"/><ellipse cx="240" cy="365" rx="23" ry="30"/><ellipse cx="360" cy="365" rx="23" ry="30"/><circle cx="245" cy="370" r="6" fill="#292834"/><circle cx="355" cy="370" r="6" fill="#292834"/><path d="M280 405 L300 420 L320 405 Q300 390 280 405Z"/><path d="M300 420 Q280 445 260 425 M300 420 Q320 445 340 425" fill="none"/><path d="M225 445 L170 435 M225 465 L170 475 M375 445 L430 435 M375 465 L430 475" fill="none"/><path d="M90 650 Q180 630 270 650 T520 650" fill="none" stroke-width="5"/></g></svg>`}
+};
+const palette=['#f47da6','#f7a65a','#ffdc65','#75cda6','#67c5ed','#9b91f5','#d7a4ee','#9c6a48','#454452','#ffffff'];
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+const paint=document.createElement('canvas');paint.width=canvas.width;paint.height=canvas.height;
+const pctx=paint.getContext('2d',{willReadFrequently:true});
+let current=null,tool='brush',color=palette[0],size=15,drawing=false,last=null,undoStack=[],saveTimer,outlineImage=null,outlineMask=null;
+const storageKey=id=>'malzauber-v7-'+id;
+const $=id=>document.getElementById(id);
+function imageFor(id){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(art[id].svg)})}
+function buildMask(){const oc=document.createElement('canvas');oc.width=canvas.width;oc.height=canvas.height;const ox=oc.getContext('2d',{willReadFrequently:true});ox.drawImage(outlineImage,0,0,oc.width,oc.height);const d=ox.getImageData(0,0,oc.width,oc.height).data;outlineMask=new Uint8Array(oc.width*oc.height);for(let i=0,j=0;i<d.length;i+=4,j++){if(d[i]<145&&d[i+1]<145&&d[i+2]<145&&d[i+3]>100)outlineMask[j]=1}}
+function fitCanvas(){const box=$('paperBox').getBoundingClientRect();const scale=Math.min(box.width/canvas.width,box.height/canvas.height);canvas.style.width=Math.max(1,canvas.width*scale)+'px';canvas.style.height=Math.max(1,canvas.height*scale)+'px'}
+function render(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(paint,0,0);if(outlineImage)ctx.drawImage(outlineImage,0,0)}
+async function drawSvg(id){outlineImage=await imageFor(id);buildMask();pctx.clearRect(0,0,paint.width,paint.height);render()}
+function saved(id){try{return localStorage.getItem(storageKey(id))}catch(e){return null}}
+function makeCard(id){const a=art[id],el=document.createElement('button');el.className='animal-card';el.innerHTML='<div class="thumb">'+a.svg+'</div><div class="card-title">'+a.emoji+' '+a.name+'</div>';el.addEventListener('click',()=>openArt(id));return el}
+function renderGallery(){const g=$('gallery');g.innerHTML='';Object.keys(art).forEach(id=>g.appendChild(makeCard(id)));const done=Object.keys(art).filter(saved);const r=$('resume');if(done.length){r.style.display='block';r.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap">'+done.map(id=>'<button class="pill" aria-label="Weitermalen: '+art[id].name+'" data-resume="'+id+'">'+art[id].emoji+' ↗</button>').join('')+'</div>';r.querySelectorAll('[data-resume]').forEach(b=>b.onclick=()=>openArt(b.dataset.resume))}else r.style.display='none'}
+function initColors(){const c=$('colors');palette.forEach(p=>{const b=document.createElement('button');b.className='swatch'+(p===color?' active':'');b.style.background=p;b.setAttribute('aria-label','Farbe '+p);b.onclick=()=>setColor(p);c.appendChild(b)})}
+function setColor(c){color=c;$('customColor').value=c;document.querySelectorAll('.swatch').forEach((b,i)=>b.classList.toggle('active',palette[i]===c))}
+function snapshot(){undoStack.push(paint.toDataURL('image/png'));if(undoStack.length>12)undoStack.shift()}
+function setStatus(t){$('saveStatus').textContent=t}
+function saveNow(){if(!current)return;try{localStorage.setItem(storageKey(current),paint.toDataURL('image/png'));setStatus('●')}catch(e){setStatus('!')}renderGallery()}
+function scheduleSave(){setStatus('…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,350)}
+function restorePaint(data){return new Promise(resolve=>{pctx.clearRect(0,0,paint.width,paint.height);if(!data){render();resolve();return}const im=new Image();im.onload=()=>{const tmp=document.createElement('canvas');tmp.width=paint.width;tmp.height=paint.height;const t=tmp.getContext('2d',{willReadFrequently:true});t.drawImage(im,0,0,tmp.width,tmp.height);const img=t.getImageData(0,0,tmp.width,tmp.height),d=img.data,od=document.createElement('canvas');od.width=paint.width;od.height=paint.height;const o=od.getContext('2d',{willReadFrequently:true});o.drawImage(outlineImage,0,0);const lines=o.getImageData(0,0,od.width,od.height).data;for(let i=0,j=0;i<d.length;i+=4,j++){if(lines[i]<145&&lines[i+1]<145&&lines[i+2]<145&&lines[i+3]>100){d[i+3]=0;continue}if(d[i]>246&&d[i+1]>246&&d[i+2]>246){d[i+3]=0;continue}if(d[i+3]===0)continue}t.putImageData(img,0,0);pctx.clearRect(0,0,paint.width,paint.height);pctx.drawImage(tmp,0,0);render();resolve()};im.onerror=()=>{render();resolve()};im.src=data})}
+async function openArt(id){current=id;tool='brush';document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));$('homeScreen').classList.remove('active');$('paintScreen').classList.add('active');$('homeBtn').style.display='inline-block';$('paintTitle').textContent=art[id].emoji+' '+art[id].name;undoStack=[];await drawSvg(id);fitCanvas();const data=saved(id);if(data){await restorePaint(data);setStatus('●')}else setStatus('●');window.scrollTo(0,0)}
+function goHome(){if(current)saveNow();$('paintScreen').classList.remove('active');$('homeScreen').classList.add('active');$('homeBtn').style.display='none';current=null;renderGallery()}
+function xy(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
+function brushAt(p,q){pctx.save();pctx.lineCap='round';pctx.lineJoin='round';pctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';pctx.strokeStyle=color;pctx.fillStyle=color;
+if(tool==='brush'||tool==='eraser'){pctx.lineWidth=size*2.4;pctx.beginPath();if(Math.hypot(q.x-p.x,q.y-p.y)<0.5){pctx.arc(p.x,p.y,pctx.lineWidth/2,0,Math.PI*2);pctx.fill()}else{pctx.moveTo(p.x,p.y);pctx.lineTo(q.x,q.y);pctx.stroke()}}
+else if(tool==='glitter'){pctx.lineWidth=size*1.15;pctx.beginPath();pctx.moveTo(p.x,p.y);pctx.lineTo(q.x,q.y);pctx.stroke();const glitters=['#ff45a5','#b75cff','#ffd638','#62dff5','#ffffff'];for(let i=0;i<7;i++){const x=q.x+(Math.random()-.5)*size*3.5,y=q.y+(Math.random()-.5)*size*3.5,r=Math.max(2,size*(.12+Math.random()*.12));pctx.fillStyle=glitters[i%glitters.length];pctx.globalAlpha=.95;pctx.beginPath();if(i%2===0){pctx.moveTo(x,y-r*2);pctx.lineTo(x+r*.45,y-r*.4);pctx.lineTo(x+r*2,y);pctx.lineTo(x+r*.45,y+r*.4);pctx.lineTo(x,y+r*2);pctx.lineTo(x-r*.45,y+r*.4);pctx.lineTo(x-r*2,y);pctx.lineTo(x-r*.45,y-r*.4);pctx.closePath()}else pctx.arc(x,y,r,0,Math.PI*2);pctx.fill()}pctx.globalAlpha=1}
+else if(tool==='pattern'){
+  const dx=q.x-p.x,dy=q.y-p.y,dist=Math.hypot(dx,dy),tapeW=Math.max(28,size*3.4);
+  pctx.lineCap='butt';pctx.lineJoin='round';pctx.lineWidth=tapeW;pctx.strokeStyle=color;
+  pctx.beginPath();
+  if(dist<0.5){pctx.moveTo(p.x-tapeW/2,p.y);pctx.lineTo(p.x+tapeW/2,p.y)}
+  else{pctx.moveTo(p.x,p.y);pctx.lineTo(q.x,q.y)}
+  pctx.stroke();
+  // Continuous wide tape with evenly spaced white dots and diagonal accents.
+  const steps=Math.max(1,Math.floor(dist/Math.max(14,tapeW*.38)));
+  for(let i=0;i<=steps;i++){
+    const f=steps?i/steps:0,x=p.x+dx*f,y=p.y+dy*f;
+    pctx.fillStyle='rgba(255,255,255,.84)';pctx.beginPath();pctx.arc(x,y,Math.max(2,tapeW*.07),0,Math.PI*2);pctx.fill();
+    pctx.strokeStyle='rgba(255,255,255,.78)';pctx.lineWidth=Math.max(2,tapeW*.045);
+    pctx.beginPath();pctx.moveTo(x-tapeW*.12,y-tapeW*.2);pctx.lineTo(x+tapeW*.12,y+tapeW*.2);pctx.stroke();
+  }
+}
+pctx.restore();render()}
+function boundaryFill(x,y){
+  const w=paint.width,h=paint.height,ix=Math.floor(x),iy=Math.floor(y);
+  if(ix<0||iy<0||ix>=w||iy>=h||!outlineMask)return;
+  const start=iy*w+ix;
+  if(outlineMask[start])return;
+  const img=pctx.getImageData(0,0,w,h),d=img.data,fill=hexRgb(color);
+  const queue=new Int32Array(w*h),seen=new Uint8Array(w*h);
+  let head=0,tail=0;queue[tail++]=start;seen[start]=1;
+  while(head<tail){
+    const pos=queue[head++],k=pos*4;
+    d[k]=fill[0];d[k+1]=fill[1];d[k+2]=fill[2];d[k+3]=255;
+    const x0=pos%w,y0=(pos/w)|0;
+    if(x0>0){const n=pos-1;if(!seen[n]&&!outlineMask[n]){seen[n]=1;queue[tail++]=n}}
+    if(x0<w-1){const n=pos+1;if(!seen[n]&&!outlineMask[n]){seen[n]=1;queue[tail++]=n}}
+    if(y0>0){const n=pos-w;if(!seen[n]&&!outlineMask[n]){seen[n]=1;queue[tail++]=n}}
+    if(y0<h-1){const n=pos+w;if(!seen[n]&&!outlineMask[n]){seen[n]=1;queue[tail++]=n}}
+  }
+  pctx.putImageData(img,0,0);render();
+}
+function hexRgb(hex){const v=parseInt(hex.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255]}
+canvas.addEventListener('pointerdown',e=>{if(!current||!outlineImage)return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId)}catch(_){}const r=canvas.getBoundingClientRect(),p={x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};if(tool==='fill'){snapshot();boundaryFill(p.x,p.y);scheduleSave();return}snapshot();drawing=true;last=p;brushAt(p,p)});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();const r=canvas.getBoundingClientRect(),p={x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};brushAt(last,p);last=p;scheduleSave()});
+function endDraw(){if(drawing){drawing=false;scheduleSave()}last=null}
+canvas.addEventListener('pointerup',endDraw);canvas.addEventListener('pointercancel',endDraw);
+document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));$('hint').textContent=''}));
+$('customColor').addEventListener('input',e=>setColor(e.target.value));$('brushSize').addEventListener('input',e=>{size=Number(e.target.value);$('sizeValue').textContent=size});
+$('undoBtn').onclick=()=>{if(undoStack.length){const im=new Image();im.onload=()=>{pctx.clearRect(0,0,paint.width,paint.height);pctx.drawImage(im,0,0,paint.width,paint.height);render();scheduleSave()};im.src=undoStack.pop()}};
+$('clearBtn').onclick=()=>{if(!current)return;const ok=confirm('Möchtest du dieses Bild wirklich neu anfangen?');if(ok){snapshot();drawSvg(current).then(scheduleSave)}};
+$('backBtn').onclick=goHome;$('homeBtn').onclick=goHome;
+window.addEventListener('resize',()=>{if($('paintScreen').classList.contains('active'))fitCanvas()});
+window.addEventListener('orientationchange',()=>setTimeout(fitCanvas,80));
+window.addEventListener('pagehide',()=>{if(current){try{localStorage.setItem(storageKey(current),paint.toDataURL('image/png'))}catch(e){}}});
+initColors();renderGallery();
+</script>
+</body>
+</html>
